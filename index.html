@@ -7,417 +7,420 @@
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-   <style>
-    :root {
-        --bg: #FFF8E7;
-        --primary: #FF6B6B;
-        --secondary: #4ECDC4;
-        --accent: #FFE66D;
-        --text: #2C3E50;
-        --blue: #5B9BD5;
-        --green: #6BCB77;
-        --yellow: #FFD93D;
-        --purple: #A97BCA;
-        --orange: #FF8C42;
-        --shadow: 0 6px 20px rgba(0,0,0,0.08);
-        --shadow-sm: 0 3px 8px rgba(0,0,0,0.05);
-        --radius: 18px;
-        --radius-sm: 10px;
-        --font: 'Lexend', Arial, sans-serif;
-        --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    html, body {
-        width:100%; height:100%; overflow:hidden;
-        font-family:var(--font);
-        background: linear-gradient(135deg, #FFF8E7 0%, #FFF0D5 25%, #FFE8EC 50%, #E8F8FF 75%, #FFF8E7 100%);
-        background-size:400% 400%;
-        animation:bgShift 20s ease infinite;
-        display:flex; align-items:center; justify-content:center;
-        user-select:none; -webkit-tap-highlight-color:transparent;
-        touch-action:manipulation;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    @keyframes bgShift {
-        0%,100%{background-position:0% 50%}
-        25%{background-position:100% 0%}
-        50%{background-position:100% 100%}
-        75%{background-position:0% 100%}
-    }
-    .game-wrapper {
-        width:100vw; height:100vh; height:100dvh;
-        position:relative; display:flex; flex-direction:column; overflow:hidden;
-    }
-    .student-name-overlay, .robot-name-overlay, .writing-overlay, .profile-overlay {
-        position:absolute; inset:0; z-index:310;
-        background:rgba(0,0,0,0.6);
-        display:flex; align-items:center; justify-content:center;
-        transition:opacity 0.4s ease;
-    }
-    .student-name-overlay.hidden, .robot-name-overlay.hidden, .writing-overlay.hidden, .profile-overlay.hidden {
-        opacity:0; pointer-events:none;
-    }
-    .name-card, .writing-card, .profile-card {
-        background:#FFFEF9; border-radius:24px;
-        padding:clamp(16px,3vmin,28px); text-align:center;
-        box-shadow:0 20px 50px rgba(0,0,0,0.3);
-        width:90vw; max-width:500px;
-        border:3px dashed #FFD93D;
-        max-height:85vh; overflow-y:auto;
-    }
-    .name-card h2, .writing-card h2, .profile-card h2 {
-        font-size:clamp(1.2rem,3.5vmin,1.6rem);
-        color:#2C3E50; margin-bottom:6px; letter-spacing:0.04em;
-    }
-    .name-card p, .writing-card p, .profile-card p {
-        color:#7F8C8D; font-size:0.85rem; margin-bottom:12px; letter-spacing:0.03em;
-    }
-    .name-input, .writing-textarea {
-        width:100%; padding:12px 16px;
-        border:3px dashed #4ECDC4; border-radius:20px;
-        font-family:var(--font); font-size:1rem;
-        text-align:center; font-weight:700;
-        color:#2C3E50; outline:none;
-        letter-spacing:0.04em; transition:all var(--transition);
-        margin-bottom:12px;
-    }
-    .writing-textarea {
-        text-align:left; min-height:120px; resize:vertical; font-weight:500;
-    }
-    .name-input:focus, .writing-textarea:focus {
-        border-color:#FF6B6B; border-style:solid;
-        box-shadow:0 0 0 5px rgba(255,107,107,0.1);
-    }
-    .name-input.error {
-        border-color:#FF6B6B; animation:shake 0.5s ease;
-    }
-    @keyframes shake {
-        0%,100%{transform:translateX(0)}
-        25%{transform:translateX(-8px)}
-        75%{transform:translateX(8px)}
-    }
-    .btn-enter, .btn-challenge, .btn-read {
-        padding:12px 30px; border:none; border-radius:50px;
-        background:linear-gradient(135deg,#FF6B6B,#FF8E53);
-        color:#FFF; font-family:var(--font); font-size:1rem;
-        font-weight:700; cursor:pointer; letter-spacing:0.04em;
-        box-shadow:0 6px 20px rgba(255,107,107,0.35);
-        transition:all var(--transition);
-        -webkit-tap-highlight-color:transparent;
-        margin:4px;
-    }
-    .btn-enter:active, .btn-challenge:active, .btn-read:active { transform:scale(0.94); }
-    .challenge-cards {
-        display:flex; flex-direction:column; gap:12px; margin:12px 0;
-    }
-    .challenge-card {
-        background:#FFF; border-radius:16px; padding:14px;
-        cursor:pointer; border:3px solid #E8ECF1;
-        transition:all var(--transition); text-align:left;
-    }
-    .challenge-card:active {
-        transform:scale(0.97); border-color:#4ECDC4;
-        box-shadow:0 0 0 4px rgba(78,205,196,0.1);
-    }
-    .challenge-card h3 { font-size:1.1rem; margin-bottom:4px; }
-    .challenge-card .desc { font-size:0.8rem; color:#7F8C8D; }
-    .word-bank {
-        display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; justify-content:center;
-    }
-    .word-bank span {
-        background:#E8FAF8; padding:6px 12px; border-radius:15px;
-        font-size:0.8rem; font-weight:600; color:#2AA89F;
-    }
-    .sentence-starters {
-        text-align:left; background:#FFF; padding:10px; border-radius:12px; margin:8px 0;
-    }
-    .sentence-starters .line { margin:6px 0; font-size:0.9rem; }
-    .sentence-starters input {
-        border:none; border-bottom:2px dashed #FF6B6B;
-        padding:2px 6px; font-family:var(--font);
-        font-size:0.9rem; outline:none;
-        width:auto; min-width:80px;
-        color:#FF6B6B; font-weight:600;
-    }
-    .feedback {
-        font-size:1.1rem; font-weight:700; color:#4ECDC4;
-        margin:8px 0; animation:popIn 0.5s ease;
-    }
-    @keyframes popIn {
-        0%{transform:scale(0);opacity:0}
-        80%{transform:scale(1.1)}
-        100%{transform:scale(1);opacity:1}
-    }
-    .welcome-screen {
-        position:absolute; inset:0; z-index:100;
-        background:linear-gradient(160deg,#FFFFFF 0%,#FFF8E7 40%,#FFE8EC 70%,#E8F0FF 100%);
-        display:flex; flex-direction:column;
-        align-items:center; justify-content:center; gap:4vmin;
-        transition:all 0.5s cubic-bezier(0.4,0,0.2,1); overflow:hidden;
-    }
-    .welcome-screen.hidden { opacity:0; pointer-events:none; transform:scale(0.93); }
-    .welcome-bg-dots { position:absolute; inset:0; pointer-events:none; opacity:0.25; }
-    .welcome-bg-dot {
-        position:absolute; border-radius:50%; background:var(--accent);
-        animation:dotFloat 6s ease-in-out infinite;
-    }
-    @keyframes dotFloat {
-        0%,100%{transform:translateY(0) scale(1)}
-        50%{transform:translateY(-25px) scale(1.25)}
-    }
-    .welcome-icon {
-        font-size:12vmin; animation:welcomeBounce 1.5s ease-in-out infinite;
-        filter:drop-shadow(0 6px 12px rgba(0,0,0,0.1)); z-index:1;
-    }
-    @keyframes welcomeBounce {
-        0%,100%{transform:translateY(0)}
-        30%{transform:translateY(-18px)}
-        50%{transform:translateY(0)}
-        70%{transform:translateY(-8px)}
-        85%{transform:translateY(0)}
-    }
-    .welcome-title {
-        font-size:clamp(1.8rem,7vmin,3rem); font-weight:800;
-        color:#2C3E50; text-align:center; z-index:1;
-        line-height:1.2; padding:0 16px; letter-spacing:0.03em;
-    }
-    .welcome-subtitle {
-        font-size:clamp(0.9rem,3.5vmin,1.4rem); color:#5D6D7E;
-        text-align:center; z-index:1; font-weight:500;
-        padding:0 16px; letter-spacing:0.02em;
-    }
-    .btn-start {
-        z-index:1; padding:clamp(14px,3vmin,20px) clamp(40px,10vmin,70px);
-        font-size:clamp(1.1rem,4vmin,1.7rem); font-weight:700;
-        font-family:var(--font); border:none; border-radius:50px;
-        background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%);
-        color:#FFF; cursor:pointer;
-        box-shadow:0 6px 20px rgba(255,107,107,0.35);
-        transition:all var(--transition); letter-spacing:0.04em;
-        -webkit-tap-highlight-color:transparent;
-    }
-    .btn-teacher-welcome {
-        z-index:1; padding:12px 30px;
-        border:2px solid #4ECDC4; border-radius:50px;
-        background:#FFF; color:#4ECDC4;
-        font-family:var(--font); font-size:1rem; font-weight:700;
-        cursor:pointer; letter-spacing:0.04em;
-        transition:all var(--transition); -webkit-tap-highlight-color:transparent;
-    }
-    .main-game {
-        display:flex; flex-direction:column;
-        width:100%; height:100%;
-        opacity:0; pointer-events:none;
-        transform:translateY(15px);
-        transition:all 0.45s cubic-bezier(0.4,0,0.2,1);
-        background:#FFFFFF; position:absolute; inset:0; z-index:50;
-    }
-    .main-game.active { opacity:1; pointer-events:all; transform:translateY(0); }
-    .top-bar {
-        display:flex; align-items:center; justify-content:space-between;
-        padding:8px 14px; background:#FAFBFC;
-        border-bottom:1.5px solid #F0F0F0;
-        flex-shrink:0; gap:8px; flex-wrap:wrap;
-    }
-    .student-badge {
-        background:#4ECDC4; color:#FFF; padding:7px 14px;
-        border-radius:20px; font-weight:700;
-        font-size:clamp(0.75rem,2vmin,0.9rem);
-        letter-spacing:0.03em; white-space:nowrap;
-    }
-    .robot-name-display {
-        flex:1; min-width:100px; padding:10px 14px;
-        border:2.5px solid #4ECDC4; border-radius:25px;
-        font-family:var(--font); font-size:clamp(0.85rem,2.5vmin,1rem);
-        font-weight:600; color:#2C3E50; background:#E8FAF8;
-        text-align:center; letter-spacing:0.03em;
-    }
-    .btn-gallery, .btn-teacher {
-        padding:10px 16px; border:2px solid #FFD93D;
-        border-radius:25px; background:#FFFEF5;
-        cursor:pointer; font-family:var(--font);
-        font-size:clamp(0.8rem,2.2vmin,0.9rem);
-        font-weight:700; color:#E0B820;
-        letter-spacing:0.03em; white-space:nowrap;
-        transition:all var(--transition); -webkit-tap-highlight-color:transparent;
-    }
-    .btn-teacher {
-        border:2px solid transparent; background:transparent;
-        font-size:1.2rem; opacity:0.5; padding:8px 14px;
-    }
-    .left-panel {
-        width:100%; flex-shrink:0; background:#FAFBFC;
-        padding:clamp(6px,1.5vmin,10px) clamp(8px,2vmin,14px);
-        display:flex; flex-wrap:wrap; gap:6px;
-        overflow-x:auto; overflow-y:hidden;
-        border-bottom:1.5px solid #F0F0F0;
-        scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
-        align-items:center;
-    }
-    .left-panel::-webkit-scrollbar{height:3px}
-    .panel-header {
-        display:flex; align-items:center; gap:6px;
-        flex-shrink:0; width:100%; justify-content:space-between;
-    }
-    .panel-title {
-        font-size:clamp(0.95rem,2.8vmin,1.2rem);
-        font-weight:700; color:#2C3E50;
-        letter-spacing:0.03em; white-space:nowrap;
-    }
-    .progress-bar-wrap {
-        flex:1; max-width:120px; height:7px;
-        background:#E8ECF1; border-radius:7px;
-        overflow:hidden; margin:0 6px;
-    }
-    .progress-bar-fill {
-        height:100%; background:linear-gradient(90deg,#4ECDC4,#6BCB77);
-        border-radius:7px; transition:width 0.4s ease; width:0%;
-    }
-    .step-indicators { display:flex; gap:3px; flex-shrink:0; }
-    .step-dot {
-        width:6px; height:6px; border-radius:50%;
-        background:#DDE1E7; transition:all var(--transition);
-    }
-    .step-dot.done {
-        background:#4ECDC4; box-shadow:0 0 4px rgba(78,205,196,0.4);
-    }
-    .category-scroll {
-        display:flex; gap:7px; width:100%;
-        overflow-x:auto; -webkit-overflow-scrolling:touch;
-    }
-    .category-scroll::-webkit-scrollbar{height:0}
-    .category-group {
-        background:#FFF; border-radius:var(--radius-sm);
-        padding:clamp(7px,1.5vmin,10px) clamp(8px,1.8vmin,12px);
-        box-shadow:var(--shadow-sm); flex-shrink:0;
-    }
-    .category-label {
-        font-size:clamp(0.6rem,1.8vmin,0.75rem);
-        font-weight:700; color:#7F8C8D; text-transform:uppercase;
-        letter-spacing:0.05em; margin-bottom:5px;
-        display:flex; align-items:center; gap:4px; white-space:nowrap;
-    }
-    .options-row { display:flex; flex-wrap:wrap; gap:4px; }
-    .option-btn {
-        padding:6px 11px; border:2px solid #E8ECF1;
-        border-radius:18px; background:#FFF; cursor:pointer;
-        font-family:var(--font); font-size:clamp(0.65rem,2vmin,0.8rem);
-        font-weight:600; color:#555; letter-spacing:0.03em;
-        white-space:nowrap; transition:all var(--transition);
-        -webkit-tap-highlight-color:transparent;
-    }
-    .option-btn:active{transform:scale(0.92)}
-    .option-btn.selected {
-        border-color:#4ECDC4; background:#E8FAF8;
-        color:#2AA89F; box-shadow:0 0 0 3px rgba(78,205,196,0.1);
-        font-weight:700;
-    }
-    .color-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .color-swatch-wrap {
-        display:flex; flex-direction:column;
-        align-items:center; gap:3px; cursor:pointer;
-    }
-    .color-swatch {
-        width:clamp(28px,5.5vmin,34px); height:clamp(28px,5.5vmin,34px);
-        border-radius:50%; border:2.5px solid #E8ECF1;
-        transition:all var(--transition);
-    }
-    .color-swatch.selected {
-        border-color:#2C3E50; box-shadow:0 0 0 4px rgba(44,62,80,0.1);
-        transform:scale(1.08);
-    }
-    .color-swatch-name {
-        font-size:0.6rem; font-weight:700; color:#555; text-transform:capitalize;
-    }
-    .right-panel {
-        flex:1; display:flex; flex-direction:column;
-        align-items:center; justify-content:center;
-        background:radial-gradient(ellipse at center,#F8FBFF 0%,#EAF4FB 40%,#DCEAF5 100%);
-        position:relative; overflow:hidden; padding:6px; min-height:0;
-    }
-    .robot-stage {
-        position:relative; width:100%;
-        max-width:min(360px,65vmin); aspect-ratio:4/5;
-        z-index:2; flex-shrink:1;
-    }
-    .robot-stage svg{width:100%;height:100%}
-    #robot-group{animation:floatRobot 3.5s ease-in-out infinite}
-    @keyframes floatRobot{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-    #robot-group.jumping{animation:jumpRobot 0.6s ease-out}
-    @keyframes jumpRobot{0%{transform:translateY(0) scaleY(1)}30%{transform:translateY(-40px) scaleY(0.85)}60%{transform:translateY(-14px) scaleY(1.05)}80%{transform:translateY(4px) scaleY(0.92)}100%{transform:translateY(0) scaleY(1)}}
-    .eye-blink{animation:blinkEyes 3.2s ease-in-out infinite}
-    @keyframes blinkEyes{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(0.06)}}
-    #arms-group.waving{animation:waveArm 0.7s ease-in-out 3}
-    @keyframes waveArm{0%,100%{transform:rotate(0deg)}30%{transform:rotate(-22deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-6deg)}}
-    .bottom-buttons {
-        display:flex; gap:7px; flex-wrap:wrap; justify-content:center;
-        padding:clamp(5px,1.2vmin,8px) 6px; flex-shrink:0;
-        z-index:3; width:100%; max-width:480px;
-    }
-    .game-btn {
-        padding:clamp(9px,2vmin,12px) clamp(12px,3vmin,20px);
-        border:none; border-radius:50px;
-        font-family:var(--font); font-size:clamp(0.7rem,2.3vmin,0.9rem);
-        font-weight:700; cursor:pointer; letter-spacing:0.03em;
-        box-shadow:var(--shadow-sm); white-space:nowrap;
-        transition:all var(--transition); -webkit-tap-highlight-color:transparent;
-    }
-    .game-btn:active{transform:scale(0.92)}
-    .btn-random{background:#FFF;color:#5D6D7E;border:2px solid #E0E5EA}
-    .btn-reset{background:#FFF;color:#5D6D7E;border:2px solid #E0E5EA}
-    .btn-build{background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%);color:#FFF;font-size:clamp(0.75rem,2.6vmin,0.95rem);padding:clamp(10px,2.2vmin,14px) clamp(16px,4.5vmin,28px);box-shadow:0 4px 16px rgba(255,107,107,0.35)}
-    .result-overlay,.gallery-overlay,.teacher-overlay {
-        position:absolute; inset:0; z-index:400;
-        background:rgba(0,0,0,0.5);
-        display:flex; align-items:center; justify-content:center;
-        opacity:0; pointer-events:none; transition:opacity 0.35s ease;
-    }
-    .result-overlay.show,.gallery-overlay.show,.teacher-overlay.show{opacity:1;pointer-events:all}
-    .result-card,.gallery-card,.teacher-card {
-        background:#FFFEF9; border-radius:20px;
-        padding:clamp(14px,2.5vmin,24px) clamp(12px,2.5vmin,20px);
-        max-width:600px; width:90vw;
-        box-shadow:0 16px 40px rgba(0,0,0,0.2);
-        text-align:center;
-        transform:translateY(25px);
-        transition:transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
-        max-height:85vh; overflow-y:auto;
-    }
-    .result-overlay.show .result-card,.gallery-overlay.show .gallery-card,.teacher-overlay.show .teacher-card{transform:translateY(0)}
-    .result-card-title,.gallery-title,.teacher-title{font-size:clamp(1.2rem,3.8vmin,1.6rem);font-weight:800;color:#2C3E50;margin-bottom:6px;letter-spacing:0.03em}
-    .result-writing{text-align:left;background:#FFF;border-radius:14px;padding:12px 14px;margin:6px 0;font-size:clamp(0.85rem,2.6vmin,1.1rem);line-height:1.8;color:#2C3E50;font-weight:500}
-    .result-writing .blank{display:inline-block;border-bottom:2.5px dashed #FF6B6B;min-width:40px;padding:0 4px;color:#FF6B6B;font-weight:700}
-    .btn-close,.btn-danger,.btn-export {
-        margin-top:10px; padding:clamp(9px,1.8vmin,12px) clamp(20px,5vmin,36px);
-        border:none; border-radius:50px; font-family:var(--font);
-        font-size:clamp(0.85rem,2.3vmin,1rem); font-weight:700;
-        cursor:pointer; letter-spacing:0.03em;
-        box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:all var(--transition);
-    }
-    .btn-close{background:#4ECDC4;color:#FFF}
-    .btn-danger{background:#FF6B6B;color:#FFF}
-    .btn-export{background:#FF8C42;color:#FFF}
-    .teacher-table{width:100%;border-collapse:collapse;font-size:clamp(0.6rem,1.5vmin,0.8rem);margin:10px 0}
-    .teacher-table th{background:#4ECDC4;color:#FFF;padding:8px 6px;font-weight:700}
-    .teacher-table td{padding:6px;border-bottom:1px solid #F0F0F0}
-    .teacher-table img{width:50px;height:62px}
-    .gallery-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-height:50vh;overflow-y:auto;padding:6px}
-    .gallery-item{background:#FFF;border-radius:14px;padding:8px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid #F0F0F0;min-width:80px;transition:all var(--transition)}
-    .confetti-piece{position:absolute;z-index:500;pointer-events:none;animation:confettiFall 2.5s ease-out forwards}
-    @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(100vh) rotate(720deg) scale(0.25);opacity:0}}
-    .toast{position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-120px);z-index:500;background:#2C3E50;color:#FFF;padding:10px 22px;border-radius:50px;font-weight:700;font-size:clamp(0.8rem,2vmin,0.95rem);font-family:var(--font);box-shadow:0 8px 22px rgba(0,0,0,0.2);letter-spacing:0.03em;pointer-events:none;white-space:nowrap;transition:transform 0.45s cubic-bezier(0.34,1.56,0.64,1)}
-    .toast.show{transform:translateX(-50%) translateY(0)}
-    .teacher-login-input{width:100%;padding:12px 16px;border:2.5px dashed #FF6B6B;border-radius:20px;font-family:var(--font);font-size:1rem;text-align:center;font-weight:700;margin:8px 0;letter-spacing:0.04em;outline:none}
-    @media(min-width:768px) and (orientation:landscape){
-        .main-game{flex-direction:row;flex-wrap:wrap}
-        .top-bar{width:100%}
-        .left-panel{width:34%;min-width:290px;max-width:400px;height:calc(100% - 50px);flex-wrap:nowrap;flex-direction:column;overflow-y:auto;overflow-x:hidden;border-bottom:none;border-right:1.5px solid #F0F0F0;padding:10px;gap:8px}
-        .category-scroll{flex-direction:column;overflow-y:auto;overflow-x:hidden;gap:8px}
-        .category-group{min-width:auto;width:100%}
-        .right-panel{flex:1;height:calc(100% - 50px)}
-        .robot-stage{max-width:min(400px,45vmin)}
-        .challenge-cards{flex-direction:row}
-    }
+    <style>
+        :root {
+            --bg: #FFF8E7;
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --text: #2C3E50;
+            --blue: #5B9BD5;
+            --green: #6BCB77;
+            --yellow: #FFD93D;
+            --purple: #A97BCA;
+            --orange: #FF8C42;
+            --shadow: 0 6px 20px rgba(0,0,0,0.08);
+            --shadow-sm: 0 3px 8px rgba(0,0,0,0.05);
+            --radius: 18px;
+            --radius-sm: 10px;
+            --font: 'Lexend', Arial, sans-serif;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body {
+            width:100%; height:100%; overflow:hidden;
+            font-family:var(--font);
+            background: linear-gradient(135deg, #FFF8E7 0%, #FFF0D5 25%, #FFE8EC 50%, #E8F8FF 75%, #FFF8E7 100%);
+            background-size:400% 400%;
+            animation:bgShift 20s ease infinite;
+            display:flex; align-items:center; justify-content:center;
+            user-select:none; -webkit-tap-highlight-color:transparent;
+            touch-action:manipulation;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        @keyframes bgShift {
+            0%,100%{background-position:0% 50%}25%{background-position:100% 0%}50%{background-position:100% 100%}75%{background-position:0% 100%}
+        }
+        .game-wrapper {
+            width:100vw; height:100vh; height:100dvh;
+            position:relative; display:flex; flex-direction:column; overflow:hidden;
+        }
+        .student-name-overlay, .robot-name-overlay, .writing-overlay, .profile-overlay {
+            position:absolute; inset:0; z-index:310;
+            background:rgba(0,0,0,0.6);
+            display:flex; align-items:center; justify-content:center;
+            transition:opacity 0.4s ease;
+        }
+        .student-name-overlay.hidden, .robot-name-overlay.hidden, .writing-overlay.hidden, .profile-overlay.hidden {
+            opacity:0; pointer-events:none;
+        }
+        .name-card, .writing-card, .profile-card {
+            background:#FFFEF9; border-radius:24px;
+            padding:clamp(14px,2.5vmin,24px); text-align:center;
+            box-shadow:0 20px 50px rgba(0,0,0,0.3);
+            width:92vw; max-width:550px;
+            border:3px dashed #FFD93D;
+            max-height:88vh; overflow-y:auto;
+        }
+        .name-card h2, .writing-card h2, .profile-card h2 {
+            font-size:clamp(1.2rem,3.5vmin,1.5rem);
+            color:#2C3E50; margin-bottom:6px; letter-spacing:0.04em;
+        }
+        .name-card p, .writing-card p, .profile-card p {
+            color:#7F8C8D; font-size:0.85rem; margin-bottom:10px; letter-spacing:0.03em;
+        }
+        .name-input, .writing-textarea {
+            width:100%; padding:12px 16px;
+            border:3px dashed #4ECDC4; border-radius:20px;
+            font-family:var(--font); font-size:1rem;
+            text-align:center; font-weight:700;
+            color:#2C3E50; outline:none;
+            letter-spacing:0.04em; transition:all var(--transition);
+            margin-bottom:10px;
+        }
+        .writing-textarea {
+            text-align:left; min-height:100px; resize:vertical; font-weight:500; font-size:0.9rem;
+        }
+        .name-input:focus, .writing-textarea:focus {
+            border-color:#FF6B6B; border-style:solid;
+            box-shadow:0 0 0 5px rgba(255,107,107,0.1);
+        }
+        .name-input.error {
+            border-color:#FF6B6B; animation:shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}
+        }
+        .btn-enter, .btn-challenge, .btn-read, .btn-wordbank {
+            padding:10px 24px; border:none; border-radius:50px;
+            background:linear-gradient(135deg,#FF6B6B,#FF8E53);
+            color:#FFF; font-family:var(--font); font-size:0.95rem;
+            font-weight:700; cursor:pointer; letter-spacing:0.04em;
+            box-shadow:0 6px 20px rgba(255,107,107,0.35);
+            transition:all var(--transition);
+            -webkit-tap-highlight-color:transparent;
+            margin:4px;
+        }
+        .btn-wordbank {
+            background:linear-gradient(135deg,#4ECDC4,#6BCB77);
+            box-shadow:0 4px 16px rgba(78,205,196,0.35);
+        }
+        .btn-enter:active, .btn-challenge:active, .btn-read:active, .btn-wordbank:active {
+            transform:scale(0.94);
+        }
+        .challenge-cards {
+            display:flex; flex-direction:column; gap:10px; margin:10px 0;
+        }
+        .challenge-card {
+            background:#FFF; border-radius:16px; padding:12px;
+            cursor:pointer; border:3px solid #E8ECF1;
+            transition:all var(--transition); text-align:left;
+        }
+        .challenge-card:active {
+            transform:scale(0.97); border-color:#4ECDC4;
+            box-shadow:0 0 0 4px rgba(78,205,196,0.1);
+        }
+        .challenge-card h3 { font-size:1.1rem; margin-bottom:4px; }
+        .challenge-card .desc { font-size:0.8rem; color:#7F8C8D; }
+        .word-bank {
+            display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; justify-content:center;
+        }
+        .word-bank span {
+            background:#E8FAF8; padding:6px 10px; border-radius:15px;
+            font-size:0.75rem; font-weight:600; color:#2AA89F;
+        }
+        .word-bank-popup {
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%, -50%);
+            background:#FFFEF9; border-radius:20px;
+            padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.3);
+            z-index:999; max-width:90vw; max-height:80vh;
+            overflow-y:auto; border:3px solid #4ECDC4;
+        }
+        .word-bank-popup h3 { margin-bottom:10px; color:#2C3E50; }
+        .word-bank-popup .close-popup {
+            margin-top:10px; padding:8px 20px;
+            border:none; border-radius:50px;
+            background:#FF6B6B; color:#FFF;
+            font-family:var(--font); font-weight:700; cursor:pointer;
+        }
+        .sentence-line {
+            display:flex; align-items:center; gap:8px;
+            margin:8px 0; font-size:0.9rem; text-align:left;
+        }
+        .sentence-line .number {
+            font-weight:700; color:#4ECDC4; min-width:20px;
+        }
+        .sentence-line .blank {
+            flex:1; border-bottom:2px dashed #FF6B6B;
+            min-width:60px; min-height:24px;
+        }
+        .robot-mini { width:60px; height:75px; margin:0 auto; }
+        .feedback {
+            font-size:1.1rem; font-weight:700; color:#4ECDC4;
+            margin:8px 0; animation:popIn 0.5s ease;
+        }
+        @keyframes popIn {
+            0%{transform:scale(0);opacity:0}80%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}
+        }
+        .welcome-screen {
+            position:absolute; inset:0; z-index:100;
+            background:linear-gradient(160deg,#FFFFFF 0%,#FFF8E7 40%,#FFE8EC 70%,#E8F0FF 100%);
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:4vmin;
+            transition:all 0.5s cubic-bezier(0.4,0,0.2,1); overflow:hidden;
+        }
+        .welcome-screen.hidden { opacity:0; pointer-events:none; transform:scale(0.93); }
+        .welcome-bg-dots { position:absolute; inset:0; pointer-events:none; opacity:0.25; }
+        .welcome-bg-dot {
+            position:absolute; border-radius:50%; background:var(--accent);
+            animation:dotFloat 6s ease-in-out infinite;
+        }
+        @keyframes dotFloat {
+            0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-25px) scale(1.25)}
+        }
+        .welcome-icon {
+            font-size:12vmin; animation:welcomeBounce 1.5s ease-in-out infinite;
+            filter:drop-shadow(0 6px 12px rgba(0,0,0,0.1)); z-index:1;
+        }
+        @keyframes welcomeBounce {
+            0%,100%{transform:translateY(0)}30%{transform:translateY(-18px)}50%{transform:translateY(0)}70%{transform:translateY(-8px)}85%{transform:translateY(0)}
+        }
+        .welcome-title {
+            font-size:clamp(1.8rem,7vmin,3rem); font-weight:800;
+            color:#2C3E50; text-align:center; z-index:1;
+            line-height:1.2; padding:0 16px; letter-spacing:0.03em;
+        }
+        .btn-start {
+            z-index:1; padding:clamp(14px,3vmin,20px) clamp(40px,10vmin,70px);
+            font-size:clamp(1.1rem,4vmin,1.7rem); font-weight:700;
+            font-family:var(--font); border:none; border-radius:50px;
+            background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%);
+            color:#FFF; cursor:pointer;
+            box-shadow:0 6px 20px rgba(255,107,107,0.35);
+            transition:all var(--transition); letter-spacing:0.04em;
+            -webkit-tap-highlight-color:transparent;
+        }
+        .btn-teacher-welcome {
+            z-index:1; padding:12px 30px;
+            border:2px solid #4ECDC4; border-radius:50px;
+            background:#FFF; color:#4ECDC4;
+            font-family:var(--font); font-size:1rem; font-weight:700;
+            cursor:pointer; letter-spacing:0.04em; transition:all var(--transition);
+        }
+        .main-game {
+            display:flex; flex-direction:column;
+            width:100%; height:100%;
+            opacity:0; pointer-events:none;
+            transform:translateY(15px);
+            transition:all 0.45s cubic-bezier(0.4,0,0.2,1);
+            background:#FFFFFF; position:absolute; inset:0; z-index:50;
+        }
+        .main-game.active { opacity:1; pointer-events:all; transform:translateY(0); }
+        .top-bar {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:8px 14px; background:#FAFBFC;
+            border-bottom:1.5px solid #F0F0F0;
+            flex-shrink:0; gap:8px; flex-wrap:wrap;
+        }
+        .student-badge {
+            background:#4ECDC4; color:#FFF; padding:7px 14px;
+            border-radius:20px; font-weight:700;
+            font-size:clamp(0.75rem,2vmin,0.9rem);
+            letter-spacing:0.03em; white-space:nowrap;
+        }
+        .robot-name-display {
+            flex:1; min-width:100px; padding:10px 14px;
+            border:2.5px solid #4ECDC4; border-radius:25px;
+            font-family:var(--font); font-size:clamp(0.85rem,2.5vmin,1rem);
+            font-weight:600; color:#2C3E50; background:#E8FAF8;
+            text-align:center; letter-spacing:0.03em;
+        }
+        .btn-gallery, .btn-teacher {
+            padding:10px 16px; border:2px solid #FFD93D;
+            border-radius:25px; background:#FFFEF5;
+            cursor:pointer; font-family:var(--font);
+            font-size:clamp(0.8rem,2.2vmin,0.9rem);
+            font-weight:700; color:#E0B820;
+            letter-spacing:0.03em; white-space:nowrap;
+            transition:all var(--transition);
+        }
+        .btn-teacher {
+            border:2px solid transparent; background:transparent;
+            font-size:1.2rem; opacity:0.5; padding:8px 14px;
+        }
+        .left-panel {
+            width:100%; flex-shrink:0; background:#FAFBFC;
+            padding:clamp(6px,1.5vmin,10px) clamp(8px,2vmin,14px);
+            display:flex; flex-wrap:wrap; gap:6px;
+            overflow-x:auto; overflow-y:hidden;
+            border-bottom:1.5px solid #F0F0F0;
+            scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
+            align-items:center;
+        }
+        .left-panel::-webkit-scrollbar{height:3px}
+        .panel-header {
+            display:flex; align-items:center; gap:6px;
+            flex-shrink:0; width:100%; justify-content:space-between;
+        }
+        .panel-title {
+            font-size:clamp(0.95rem,2.8vmin,1.2rem);
+            font-weight:700; color:#2C3E50;
+            letter-spacing:0.03em; white-space:nowrap;
+        }
+        .progress-bar-wrap {
+            flex:1; max-width:120px; height:7px;
+            background:#E8ECF1; border-radius:7px;
+            overflow:hidden; margin:0 6px;
+        }
+        .progress-bar-fill {
+            height:100%; background:linear-gradient(90deg,#4ECDC4,#6BCB77);
+            border-radius:7px; transition:width 0.4s ease; width:0%;
+        }
+        .step-indicators { display:flex; gap:3px; flex-shrink:0; }
+        .step-dot {
+            width:6px; height:6px; border-radius:50%;
+            background:#DDE1E7; transition:all var(--transition);
+        }
+        .step-dot.done {
+            background:#4ECDC4; box-shadow:0 0 4px rgba(78,205,196,0.4);
+        }
+        .category-scroll {
+            display:flex; gap:7px; width:100%;
+            overflow-x:auto; -webkit-overflow-scrolling:touch;
+        }
+        .category-scroll::-webkit-scrollbar{height:0}
+        .category-group {
+            background:#FFF; border-radius:var(--radius-sm);
+            padding:clamp(7px,1.5vmin,10px) clamp(8px,1.8vmin,12px);
+            box-shadow:var(--shadow-sm); flex-shrink:0;
+        }
+        .category-label {
+            font-size:clamp(0.6rem,1.8vmin,0.75rem);
+            font-weight:700; color:#7F8C8D; text-transform:uppercase;
+            letter-spacing:0.05em; margin-bottom:5px;
+            display:flex; align-items:center; gap:4px; white-space:nowrap;
+        }
+        .options-row { display:flex; flex-wrap:wrap; gap:4px; }
+        .option-btn {
+            padding:6px 11px; border:2px solid #E8ECF1;
+            border-radius:18px; background:#FFF; cursor:pointer;
+            font-family:var(--font); font-size:clamp(0.65rem,2vmin,0.8rem);
+            font-weight:600; color:#555; letter-spacing:0.03em;
+            white-space:nowrap; transition:all var(--transition);
+            -webkit-tap-highlight-color:transparent;
+        }
+        .option-btn:active{transform:scale(0.92)}
+        .option-btn.selected {
+            border-color:#4ECDC4; background:#E8FAF8;
+            color:#2AA89F; box-shadow:0 0 0 3px rgba(78,205,196,0.1);
+            font-weight:700;
+        }
+        .color-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        .color-swatch-wrap {
+            display:flex; flex-direction:column;
+            align-items:center; gap:3px; cursor:pointer;
+        }
+        .color-swatch {
+            width:clamp(28px,5.5vmin,34px); height:clamp(28px,5.5vmin,34px);
+            border-radius:50%; border:2.5px solid #E8ECF1;
+            transition:all var(--transition);
+        }
+        .color-swatch.selected, .color-swatch-wrap.selected .color-swatch {
+            border-color:#2C3E50; box-shadow:0 0 0 4px rgba(44,62,80,0.1);
+            transform:scale(1.08);
+        }
+        .color-swatch-name {
+            font-size:0.6rem; font-weight:700; color:#555; text-transform:capitalize;
+        }
+        .right-panel {
+            flex:1; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            background:radial-gradient(ellipse at center,#F8FBFF 0%,#EAF4FB 40%,#DCEAF5 100%);
+            position:relative; overflow:hidden; padding:6px; min-height:0;
+        }
+        .robot-stage {
+            position:relative; width:100%;
+            max-width:min(360px,65vmin); aspect-ratio:4/5;
+            z-index:2; flex-shrink:1;
+        }
+        .robot-stage svg{width:100%;height:100%}
+        #robot-group{animation:floatRobot 3.5s ease-in-out infinite}
+        @keyframes floatRobot{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        #robot-group.jumping{animation:jumpRobot 0.6s ease-out}
+        @keyframes jumpRobot{0%{transform:translateY(0) scaleY(1)}30%{transform:translateY(-40px) scaleY(0.85)}60%{transform:translateY(-14px) scaleY(1.05)}80%{transform:translateY(4px) scaleY(0.92)}100%{transform:translateY(0) scaleY(1)}}
+        .eye-blink{animation:blinkEyes 3.2s ease-in-out infinite}
+        @keyframes blinkEyes{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(0.06)}}
+        #arms-group.waving{animation:waveArm 0.7s ease-in-out 3}
+        @keyframes waveArm{0%,100%{transform:rotate(0deg)}30%{transform:rotate(-22deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-6deg)}}
+        .bottom-buttons {
+            display:flex; gap:7px; flex-wrap:wrap; justify-content:center;
+            padding:clamp(5px,1.2vmin,8px) 6px; flex-shrink:0;
+            z-index:3; width:100%; max-width:480px;
+        }
+        .game-btn {
+            padding:clamp(9px,2vmin,12px) clamp(12px,3vmin,20px);
+            border:none; border-radius:50px;
+            font-family:var(--font); font-size:clamp(0.7rem,2.3vmin,0.9rem);
+            font-weight:700; cursor:pointer; letter-spacing:0.03em;
+            box-shadow:var(--shadow-sm); white-space:nowrap;
+            transition:all var(--transition); -webkit-tap-highlight-color:transparent;
+        }
+        .game-btn:active{transform:scale(0.92)}
+        .btn-random{background:#FFF;color:#5D6D7E;border:2px solid #E0E5EA}
+        .btn-reset{background:#FFF;color:#5D6D7E;border:2px solid #E0E5EA}
+        .btn-build{background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%);color:#FFF;font-size:clamp(0.75rem,2.6vmin,0.95rem);padding:clamp(10px,2.2vmin,14px) clamp(16px,4.5vmin,28px);box-shadow:0 4px 16px rgba(255,107,107,0.35)}
+        .result-overlay,.gallery-overlay,.teacher-overlay {
+            position:absolute; inset:0; z-index:400;
+            background:rgba(0,0,0,0.5);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; transition:opacity 0.35s ease;
+        }
+        .result-overlay.show,.gallery-overlay.show,.teacher-overlay.show{opacity:1;pointer-events:all}
+        .result-card,.gallery-card,.teacher-card {
+            background:#FFFEF9; border-radius:20px;
+            padding:clamp(14px,2.5vmin,24px) clamp(12px,2.5vmin,20px);
+            max-width:600px; width:90vw;
+            box-shadow:0 16px 40px rgba(0,0,0,0.2);
+            text-align:center;
+            transform:translateY(25px);
+            transition:transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+            max-height:85vh; overflow-y:auto;
+        }
+        .result-overlay.show .result-card,.gallery-overlay.show .gallery-card,.teacher-overlay.show .teacher-card{transform:translateY(0)}
+        .btn-close,.btn-danger,.btn-export {
+            margin-top:10px;
+            padding:clamp(9px,1.8vmin,12px) clamp(20px,5vmin,36px);
+            border:none; border-radius:50px;
+            font-family:var(--font); font-size:clamp(0.85rem,2.3vmin,1rem);
+            font-weight:700; cursor:pointer; letter-spacing:0.03em;
+            box-shadow:0 3px 12px rgba(0,0,0,0.2);
+            transition:all var(--transition);
+        }
+        .btn-close{background:#4ECDC4;color:#FFF}
+        .btn-danger{background:#FF6B6B;color:#FFF}
+        .btn-export{background:#FF8C42;color:#FFF}
+        .teacher-table{width:100%;border-collapse:collapse;font-size:clamp(0.6rem,1.5vmin,0.8rem);margin:10px 0}
+        .teacher-table th{background:#4ECDC4;color:#FFF;padding:8px 6px;font-weight:700}
+        .teacher-table td{padding:6px;border-bottom:1px solid #F0F0F0}
+        .teacher-table img{width:50px;height:62px}
+        .gallery-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-height:50vh;overflow-y:auto;padding:6px}
+        .gallery-item{background:#FFF;border-radius:14px;padding:8px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid #F0F0F0;min-width:80px;transition:all var(--transition)}
+        .confetti-piece{position:absolute;z-index:500;pointer-events:none;animation:confettiFall 2.5s ease-out forwards}
+        @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(100vh) rotate(720deg) scale(0.25);opacity:0}}
+        .toast{position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-120px);z-index:500;background:#2C3E50;color:#FFF;padding:10px 22px;border-radius:50px;font-weight:700;font-size:clamp(0.8rem,2vmin,0.95rem);font-family:var(--font);box-shadow:0 8px 22px rgba(0,0,0,0.2);letter-spacing:0.03em;pointer-events:none;white-space:nowrap;transition:transform 0.45s cubic-bezier(0.34,1.56,0.64,1)}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+        .teacher-login-input{width:100%;padding:12px 16px;border:2.5px dashed #FF6B6B;border-radius:20px;font-family:var(--font);font-size:1rem;text-align:center;font-weight:700;margin:8px 0;letter-spacing:0.04em;outline:none}
+        @media(min-width:768px) and (orientation:landscape){
+            .main-game{flex-direction:row;flex-wrap:wrap}
+            .top-bar{width:100%}
+            .left-panel{width:34%;min-width:290px;max-width:400px;height:calc(100% - 50px);flex-wrap:nowrap;flex-direction:column;overflow-y:auto;overflow-x:hidden;border-bottom:none;border-right:1.5px solid #F0F0F0;padding:10px;gap:8px}
+            .category-scroll{flex-direction:column;overflow-y:auto;overflow-x:hidden;gap:8px}
+            .category-group{min-width:auto;width:100%}
+            .right-panel{flex:1;height:calc(100% - 50px)}
+            .robot-stage{max-width:min(400px,45vmin)}
+            .challenge-cards{flex-direction:row}
+        }
     </style>
 </head>
 <body>
@@ -509,80 +512,25 @@
         appId: "1:1058269539402:web:34384ef4736c826a2ecab3",
         measurementId: "G-0W6J905BZW"
     };
-
     let db = null;
     let firebaseReady = false;
-    try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        firebaseReady = true;
-        console.log('✅ Firebase connected');
-    } catch (e) {
-        console.warn('⚠️ Firebase offline');
-    }
+    try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); firebaseReady = true; } catch (e) {}
 
     const AudioEngine = {
         ctx: null,
-        getContext() {
-            if (!this.ctx) this.ctx = new(window.AudioContext || window.webkitAudioContext)();
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            return this.ctx;
-        },
-        playTone(f, d, t = 'sine', v = 0.06) {
-            try {
-                const c = this.getContext(),
-                    o = c.createOscillator(),
-                    g = c.createGain();
-                o.type = t;
-                o.frequency.setValueAtTime(f, c.currentTime);
-                g.gain.setValueAtTime(v, c.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
-                o.connect(g);
-                g.connect(c.destination);
-                o.start(c.currentTime);
-                o.stop(c.currentTime + d);
-            } catch (e) {}
-        },
+        getContext() { if (!this.ctx) this.ctx = new(window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ctx; },
+        playTone(f, d, t = 'sine', v = 0.06) { try { const c = this.getContext(), o = c.createOscillator(), g = c.createGain(); o.type = t; o.frequency.setValueAtTime(f, c.currentTime); g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d); o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + d); } catch (e) {} },
         click() { this.playTone(660, 0.12, 'sine', 0.05); },
-        success() {
-            this.playTone(523, 0.1);
-            setTimeout(() => this.playTone(659, 0.1), 100);
-            setTimeout(() => this.playTone(784, 0.15), 200);
-        },
-        random() {
-            this.playTone(440, 0.06, 'triangle');
-            setTimeout(() => this.playTone(554, 0.06, 'triangle'), 70);
-        },
-        fanfare() {
-            [523, 587, 659, 698, 784, 880, 988, 1047].forEach((n, i) => setTimeout(() => this.playTone(n, 0.14, 'sine', 0.06), i * 60));
-        }
+        success() { this.playTone(523, 0.1); setTimeout(() => this.playTone(659, 0.1), 100); setTimeout(() => this.playTone(784, 0.15), 200); },
+        random() { this.playTone(440, 0.06, 'triangle'); setTimeout(() => this.playTone(554, 0.06, 'triangle'), 70); },
+        fanfare() { [523, 587, 659, 698, 784, 880, 988, 1047].forEach((n, i) => setTimeout(() => this.playTone(n, 0.14, 'sine', 0.06), i * 60)); }
     };
 
-    const state = {
-        head: 0,
-        eyes: 0,
-        mouth: 0,
-        arms: 0,
-        legs: 0,
-        bodyColor: 'blue',
-        ability: 'fly',
-        interactedCategories: new Set()
-    };
-    const defaults = { head: 0, eyes: 0, mouth: 0, arms: 0, legs: 0, bodyColor: 'blue', ability: 'fly' };
-    const bodyColorMap = {
-        blue: '#5B9BD5',
-        green: '#6BCB77',
-        yellow: '#FFD93D',
-        purple: '#A97BCA',
-        orange: '#FF8C42'
-    };
-    const bodyColorDarkMap = {
-        blue: '#3D7AB8',
-        green: '#4AA85A',
-        yellow: '#E0B820',
-        purple: '#8B5EAF',
-        orange: '#E07530'
-    };
+    // روبوت فاضي في البداية
+    const state = { head: null, eyes: null, mouth: null, arms: null, legs: null, bodyColor: null, ability: null, interactedCategories: new Set() };
+    const defaults = { head: null, eyes: null, mouth: null, arms: null, legs: null, bodyColor: null, ability: null };
+    const bodyColorMap = { blue: '#5B9BD5', green: '#6BCB77', yellow: '#FFD93D', purple: '#A97BCA', orange: '#FF8C42' };
+    const bodyColorDarkMap = { blue: '#3D7AB8', green: '#4AA85A', yellow: '#E0B820', purple: '#8B5EAF', orange: '#E07530' };
     const abilityLabels = { fly: 'Fly', clean: 'Clean', cook: 'Cook', dance: 'Dance', swim: 'Swim' };
     const abilityEmoji = { fly: '🪽', clean: '🧹', cook: '🍳', dance: '💃', swim: '🏊' };
     let studentName = '';
@@ -591,182 +539,131 @@
     let finalParagraph = '';
     const TEACHER_PASSWORD = 'teacher123';
 
-    try {
-        const s = localStorage.getItem('robotGallery');
-        if (s) robotGallery = JSON.parse(s);
-    } catch (e) {}
+    const ALL_WORDS = {
+        head: ['round', 'square', 'rectangle', 'triangle'],
+        eyes: ['round', 'star', 'diamond', 'heart'],
+        mouth: ['smile', 'straight', 'open', 'zigzag'],
+        arms: ['normal', 'claw', 'hook', 'grabber'],
+        legs: ['boots', 'wheel', 'skates', 'spring'],
+        bodyColor: ['blue', 'green', 'yellow', 'purple', 'orange'],
+        ability: ['fly', 'clean', 'cook', 'dance', 'swim']
+    };
 
-    function saveGallery() {
-        try { localStorage.setItem('robotGallery', JSON.stringify(robotGallery)); } catch (e) {}
-    }
-
+    try { const s = localStorage.getItem('robotGallery'); if (s) robotGallery = JSON.parse(s); } catch (e) {}
+    function saveGallery() { try { localStorage.setItem('robotGallery', JSON.stringify(robotGallery)); } catch (e) {} }
+    
     function svgToPngBase64(svgString, width = 400, height = 480) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d');
             const img = new Image();
             const blob = new Blob([svgString], { type: 'image/svg+xml' });
             const url = URL.createObjectURL(blob);
-            img.onload = () => {
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, width, height);
-                ctx.drawImage(img, 0, 0, width, height);
-                URL.revokeObjectURL(url);
-                resolve(canvas.toDataURL('image/png'));
-            };
+            img.onload = () => { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); ctx.drawImage(img, 0, 0, width, height); URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/png')); };
             img.onerror = () => resolve('');
             img.src = url;
         });
     }
 
+    // SVG Generators - بترجع فاضي لو لسه متصممش
     function getHeadSVG(s) {
-        const cx = 200,
-            cy = 100;
+        if (s === null || s === undefined) return '';
+        const cx = 200, cy = 100;
         switch (s) {
-            case 0:
-                return `<circle cx="${cx}" cy="${cy}" r="55" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
-            case 1:
-                return `<rect x="${cx-52}" y="${cy-48}" width="104" height="96" rx="20" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
-            case 2:
-                return `<rect x="${cx-50}" y="${cy-44}" width="100" height="88" rx="8" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
-            case 3:
-                return `<polygon points="${cx},${cy-54} ${cx+50},${cy+36} ${cx-50},${cy+36}" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3" stroke-linejoin="round"/>`;
-            default:
-                return `<circle cx="${cx}" cy="${cy}" r="55" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
+            case 0: return `<circle cx="${cx}" cy="${cy}" r="55" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
+            case 1: return `<rect x="${cx-52}" y="${cy-48}" width="104" height="96" rx="20" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
+            case 2: return `<rect x="${cx-50}" y="${cy-44}" width="100" height="88" rx="8" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3"/>`;
+            case 3: return `<polygon points="${cx},${cy-54} ${cx+50},${cy+36} ${cx-50},${cy+36}" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3" stroke-linejoin="round"/>`;
+            default: return '';
         }
     }
-
     function getEyesSVG(s) {
-        const lx = 175,
-            rx = 225,
-            y = 92;
+        if (s === null || s === undefined) return '';
+        const lx = 175, rx = 225, y = 92;
         switch (s) {
-            case 0:
-                return `<circle cx="${lx}" cy="${y}" r="14" fill="#FFF" stroke="#333" stroke-width="2.5"/><circle cx="${lx}" cy="${y}" r="6" fill="#222"/><circle cx="${lx-3}" cy="${y-4}" r="3" fill="#FFF"/><circle cx="${rx}" cy="${y}" r="14" fill="#FFF" stroke="#333" stroke-width="2.5"/><circle cx="${rx}" cy="${y}" r="6" fill="#222"/><circle cx="${rx-3}" cy="${y-4}" r="3" fill="#FFF"/>`;
-            case 1:
-                const sp = 'M0,-14 L3.5,-4.5 L13.5,-4.5 L5.5,1.5 L8.5,11 L0,5 L-8.5,11 L-5.5,1.5 L-13.5,-4.5 L-3.5,-4.5 Z';
-                return `<g transform="translate(${lx},${y})"><path d="${sp}" fill="#FFE066" stroke="#E0B820" stroke-width="1.5"/><circle cx="0" cy="-2" r="3.5" fill="#222"/></g><g transform="translate(${rx},${y})"><path d="${sp}" fill="#FFE066" stroke="#E0B820" stroke-width="1.5"/><circle cx="0" cy="-2" r="3.5" fill="#222"/></g>`;
-            case 2:
-                return `<rect x="${lx-16}" y="${y-12}" width="32" height="24" rx="4" fill="#444" stroke="#222" stroke-width="2" transform="rotate(45,${lx},${y})"/><rect x="${lx-10}" y="${y-7}" width="20" height="14" rx="3" fill="#88DDFF" opacity="0.8" transform="rotate(45,${lx},${y})"/><circle cx="${lx}" cy="${y}" r="2.5" fill="#FFF" opacity="0.9"/><rect x="${rx-16}" y="${y-12}" width="32" height="24" rx="4" fill="#444" stroke="#222" stroke-width="2" transform="rotate(45,${rx},${y})"/><rect x="${rx-10}" y="${y-7}" width="20" height="14" rx="3" fill="#88DDFF" opacity="0.8" transform="rotate(45,${rx},${y})"/><circle cx="${rx}" cy="${y}" r="2.5" fill="#FFF" opacity="0.9"/>`;
-            case 3:
-                const hp = 'M0,-8 C-4,-16 -18,-14 -18,-4 C-18,6 0,16 0,16 C0,16 18,6 18,-4 C18,-14 4,-16 0,-8 Z';
-                return `<g transform="translate(${lx},${y})"><path d="${hp}" fill="#FF6B6B" stroke="#C0392B" stroke-width="1.2" transform="scale(0.9)"/><circle cx="-3" cy="-5" r="2.5" fill="#FFF" opacity="0.7"/></g><g transform="translate(${rx},${y})"><path d="${hp}" fill="#FF6B6B" stroke="#C0392B" stroke-width="1.2" transform="scale(0.9)"/><circle cx="-3" cy="-5" r="2.5" fill="#FFF" opacity="0.7"/></g>`;
-            default:
-                return '';
+            case 0: return `<circle cx="${lx}" cy="${y}" r="14" fill="#FFF" stroke="#333" stroke-width="2.5"/><circle cx="${lx}" cy="${y}" r="6" fill="#222"/><circle cx="${lx-3}" cy="${y-4}" r="3" fill="#FFF"/><circle cx="${rx}" cy="${y}" r="14" fill="#FFF" stroke="#333" stroke-width="2.5"/><circle cx="${rx}" cy="${y}" r="6" fill="#222"/><circle cx="${rx-3}" cy="${y-4}" r="3" fill="#FFF"/>`;
+            case 1: const sp = 'M0,-14 L3.5,-4.5 L13.5,-4.5 L5.5,1.5 L8.5,11 L0,5 L-8.5,11 L-5.5,1.5 L-13.5,-4.5 L-3.5,-4.5 Z'; return `<g transform="translate(${lx},${y})"><path d="${sp}" fill="#FFE066" stroke="#E0B820" stroke-width="1.5"/><circle cx="0" cy="-2" r="3.5" fill="#222"/></g><g transform="translate(${rx},${y})"><path d="${sp}" fill="#FFE066" stroke="#E0B820" stroke-width="1.5"/><circle cx="0" cy="-2" r="3.5" fill="#222"/></g>`;
+            case 2: return `<rect x="${lx-16}" y="${y-12}" width="32" height="24" rx="4" fill="#444" stroke="#222" stroke-width="2" transform="rotate(45,${lx},${y})"/><rect x="${lx-10}" y="${y-7}" width="20" height="14" rx="3" fill="#88DDFF" opacity="0.8" transform="rotate(45,${lx},${y})"/><circle cx="${lx}" cy="${y}" r="2.5" fill="#FFF" opacity="0.9"/><rect x="${rx-16}" y="${y-12}" width="32" height="24" rx="4" fill="#444" stroke="#222" stroke-width="2" transform="rotate(45,${rx},${y})"/><rect x="${rx-10}" y="${y-7}" width="20" height="14" rx="3" fill="#88DDFF" opacity="0.8" transform="rotate(45,${rx},${y})"/><circle cx="${rx}" cy="${y}" r="2.5" fill="#FFF" opacity="0.9"/>`;
+            case 3: const hp = 'M0,-8 C-4,-16 -18,-14 -18,-4 C-18,6 0,16 0,16 C0,16 18,6 18,-4 C18,-14 4,-16 0,-8 Z'; return `<g transform="translate(${lx},${y})"><path d="${hp}" fill="#FF6B6B" stroke="#C0392B" stroke-width="1.2" transform="scale(0.9)"/><circle cx="-3" cy="-5" r="2.5" fill="#FFF" opacity="0.7"/></g><g transform="translate(${rx},${y})"><path d="${hp}" fill="#FF6B6B" stroke="#C0392B" stroke-width="1.2" transform="scale(0.9)"/><circle cx="-3" cy="-5" r="2.5" fill="#FFF" opacity="0.7"/></g>`;
+            default: return '';
         }
     }
-
     function getMouthSVG(s) {
-        const cx = 200,
-            y = 128;
+        if (s === null || s === undefined) return '';
+        const cx = 200, y = 128;
         switch (s) {
-            case 0:
-                return `<path d="M${cx-16},${y} Q${cx},${y+16} ${cx+16},${y}" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>`;
-            case 1:
-                return `<line x1="${cx-16}" y1="${y}" x2="${cx+16}" y2="${y}" stroke="#444" stroke-width="3" stroke-linecap="round"/>`;
-            case 2:
-                return `<ellipse cx="${cx}" cy="${y+4}" rx="11" ry="8" fill="#333"/>`;
-            case 3:
-                return `<polyline points="${cx-16},${y-3} ${cx-8},${y+6} ${cx},${y-3} ${cx+8},${y+6} ${cx+16},${y-3}" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
-            default:
-                return '';
+            case 0: return `<path d="M${cx-16},${y} Q${cx},${y+16} ${cx+16},${y}" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>`;
+            case 1: return `<line x1="${cx-16}" y1="${y}" x2="${cx+16}" y2="${y}" stroke="#444" stroke-width="3" stroke-linecap="round"/>`;
+            case 2: return `<ellipse cx="${cx}" cy="${y+4}" rx="11" ry="8" fill="#333"/>`;
+            case 3: return `<polyline points="${cx-16},${y-3} ${cx-8},${y+6} ${cx},${y-3} ${cx+8},${y+6} ${cx+16},${y-3}" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+            default: return '';
         }
     }
-
     function getArmsSVG(s) {
-        const lx = 142,
-            rx = 258,
-            by = 195;
+        if (s === null || s === undefined) return '';
+        const lx = 142, rx = 258, by = 195;
         switch (s) {
-            case 0:
-                return `<line x1="${lx}" y1="${by}" x2="${lx-50}" y2="${by+50}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${lx-50}" cy="${by+50}" r="14" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/><line x1="${rx}" y1="${by}" x2="${rx+50}" y2="${by+50}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${rx+50}" cy="${by+50}" r="14" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/>`;
-            case 1:
-                return `<line x1="${lx}" y1="${by}" x2="${lx-44}" y2="${by+44}" stroke="var(--bodyColorDark)" stroke-width="11" stroke-linecap="round"/><path d="M${lx-58},${by+38} L${lx-44},${by+54} L${lx-30},${by+42}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><line x1="${rx}" y1="${by}" x2="${rx+44}" y2="${by+44}" stroke="var(--bodyColorDark)" stroke-width="11" stroke-linecap="round"/><path d="M${rx+30},${by+42} L${rx+44},${by+54} L${rx+58},${by+38}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
-            case 2:
-                return `<line x1="${lx}" y1="${by}" x2="${lx-42}" y2="${by+48}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><path d="M${lx-50},${by+40} Q${lx-48},${by+58} ${lx-38},${by+56}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round"/><line x1="${rx}" y1="${by}" x2="${rx+42}" y2="${by+48}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><path d="M${rx+38},${by+56} Q${rx+48},${by+58} ${rx+50},${by+40}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round"/>`;
-            case 3:
-                return `<line x1="${lx}" y1="${by}" x2="${lx-40}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${lx-58}" y="${by+36}" width="22" height="30" rx="6" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/><line x1="${rx}" y1="${by}" x2="${rx+40}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${rx+36}" y="${by+36}" width="22" height="30" rx="6" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/>`;
-            default:
-                return '';
+            case 0: return `<line x1="${lx}" y1="${by}" x2="${lx-50}" y2="${by+50}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${lx-50}" cy="${by+50}" r="14" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/><line x1="${rx}" y1="${by}" x2="${rx+50}" y2="${by+50}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${rx+50}" cy="${by+50}" r="14" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/>`;
+            case 1: return `<line x1="${lx}" y1="${by}" x2="${lx-44}" y2="${by+44}" stroke="var(--bodyColorDark)" stroke-width="11" stroke-linecap="round"/><path d="M${lx-58},${by+38} L${lx-44},${by+54} L${lx-30},${by+42}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><line x1="${rx}" y1="${by}" x2="${rx+44}" y2="${by+44}" stroke="var(--bodyColorDark)" stroke-width="11" stroke-linecap="round"/><path d="M${rx+30},${by+42} L${rx+44},${by+54} L${rx+58},${by+38}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+            case 2: return `<line x1="${lx}" y1="${by}" x2="${lx-42}" y2="${by+48}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><path d="M${lx-50},${by+40} Q${lx-48},${by+58} ${lx-38},${by+56}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round"/><line x1="${rx}" y1="${by}" x2="${rx+42}" y2="${by+48}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><path d="M${rx+38},${by+56} Q${rx+48},${by+58} ${rx+50},${by+40}" fill="none" stroke="var(--bodyColorDark)" stroke-width="4" stroke-linecap="round"/>`;
+            case 3: return `<line x1="${lx}" y1="${by}" x2="${lx-40}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${lx-58}" y="${by+36}" width="22" height="30" rx="6" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/><line x1="${rx}" y1="${by}" x2="${rx+40}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${rx+36}" y="${by+36}" width="22" height="30" rx="6" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="2.5"/>`;
+            default: return '';
         }
     }
-
     function getLegsSVG(s) {
-        const lx = 172,
-            rx = 228,
-            by = 295;
+        if (s === null || s === undefined) return '';
+        const lx = 172, rx = 228, by = 295;
         switch (s) {
-            case 0:
-                return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+60}" stroke="var(--bodyColorDark)" stroke-width="14" stroke-linecap="round"/><rect x="${lx-18}" y="${by+54}" width="36" height="16" rx="8" fill="#444" stroke="#222" stroke-width="2"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+60}" stroke="var(--bodyColorDark)" stroke-width="14" stroke-linecap="round"/><rect x="${rx-18}" y="${by+54}" width="36" height="16" rx="8" fill="#444" stroke="#222" stroke-width="2"/>`;
-            case 1:
-                return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+30}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${lx}" cy="${by+46}" r="22" fill="#555" stroke="#333" stroke-width="3"/><circle cx="${lx}" cy="${by+46}" r="8" fill="#888"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+30}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${rx}" cy="${by+46}" r="22" fill="#555" stroke="#333" stroke-width="3"/><circle cx="${rx}" cy="${by+46}" r="8" fill="#888"/>`;
-            case 2:
-                return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${lx-22}" y="${by+40}" width="44" height="12" rx="6" fill="#555" stroke="#333" stroke-width="2"/><circle cx="${lx-14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${lx}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${lx+14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${rx-22}" y="${by+40}" width="44" height="12" rx="6" fill="#555" stroke="#333" stroke-width="2"/><circle cx="${rx-14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${rx}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${rx+14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/>`;
-            case 3:
-                return `<polyline points="${lx},${by} ${lx-10},${by+18} ${lx+10},${by+36} ${lx},${by+54}" fill="none" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lx}" cy="${by+58}" r="10" fill="#444" stroke="#222" stroke-width="2"/><polyline points="${rx},${by} ${rx+10},${by+18} ${rx-10},${by+36} ${rx},${by+54}" fill="none" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${rx}" cy="${by+58}" r="10" fill="#444" stroke="#222" stroke-width="2"/>`;
-            default:
-                return '';
+            case 0: return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+60}" stroke="var(--bodyColorDark)" stroke-width="14" stroke-linecap="round"/><rect x="${lx-18}" y="${by+54}" width="36" height="16" rx="8" fill="#444" stroke="#222" stroke-width="2"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+60}" stroke="var(--bodyColorDark)" stroke-width="14" stroke-linecap="round"/><rect x="${rx-18}" y="${by+54}" width="36" height="16" rx="8" fill="#444" stroke="#222" stroke-width="2"/>`;
+            case 1: return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+30}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${lx}" cy="${by+46}" r="22" fill="#555" stroke="#333" stroke-width="3"/><circle cx="${lx}" cy="${by+46}" r="8" fill="#888"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+30}" stroke="var(--bodyColorDark)" stroke-width="12" stroke-linecap="round"/><circle cx="${rx}" cy="${by+46}" r="22" fill="#555" stroke="#333" stroke-width="3"/><circle cx="${rx}" cy="${by+46}" r="8" fill="#888"/>`;
+            case 2: return `<line x1="${lx}" y1="${by}" x2="${lx}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${lx-22}" y="${by+40}" width="44" height="12" rx="6" fill="#555" stroke="#333" stroke-width="2"/><circle cx="${lx-14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${lx}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${lx+14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><line x1="${rx}" y1="${by}" x2="${rx}" y2="${by+40}" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round"/><rect x="${rx-22}" y="${by+40}" width="44" height="12" rx="6" fill="#555" stroke="#333" stroke-width="2"/><circle cx="${rx-14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${rx}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/><circle cx="${rx+14}" cy="${by+56}" r="6" fill="#888" stroke="#333" stroke-width="1.5"/>`;
+            case 3: return `<polyline points="${lx},${by} ${lx-10},${by+18} ${lx+10},${by+36} ${lx},${by+54}" fill="none" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lx}" cy="${by+58}" r="10" fill="#444" stroke="#222" stroke-width="2"/><polyline points="${rx},${by} ${rx+10},${by+18} ${rx-10},${by+36} ${rx},${by+54}" fill="none" stroke="var(--bodyColorDark)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${rx}" cy="${by+58}" r="10" fill="#444" stroke="#222" stroke-width="2"/>`;
+            default: return '';
         }
     }
-
     function getAntennaSVG() {
+        if (state.head === null || state.head === undefined) return '';
         return `<line x1="200" y1="52" x2="200" y2="22" stroke="#888" stroke-width="5" stroke-linecap="round"/><circle cx="200" cy="16" r="9" fill="#FF6B6B" stroke="#C0392B" stroke-width="2"/><circle cx="197" cy="13" r="3" fill="#FFF" opacity="0.6"/>`;
     }
-
-    function getControlPanelSVG(a) {
-        let icon = '';
-        switch (a) {
-            case 'fly':
-                icon = '<path d="M0,-6 C-4,-14 4,-14 0,-6 M-6,0 L6,0 M-4,4 L4,4" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>';
-                break;
-            case 'clean':
-                icon = '<circle cx="0" cy="-3" r="4" fill="none" stroke="#FFF" stroke-width="2"/><line x1="3" y1="0" x2="8" y2="5" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>';
-                break;
-            case 'cook':
-                icon = '<ellipse cx="0" cy="-2" rx="6" ry="3" fill="none" stroke="#FFF" stroke-width="2"/><rect x="-3" y="1" width="6" height="5" rx="1" fill="none" stroke="#FFF" stroke-width="1.5"/>';
-                break;
-            case 'dance':
-                icon = '<line x1="-4" y1="-5" x2="-4" y2="5" stroke="#FFF" stroke-width="2" stroke-linecap="round"/><line x1="4" y1="-5" x2="4" y2="5" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>';
-                break;
-            case 'swim':
-                icon = '<path d="M-7,-2 C-4,-6 4,-6 7,-2" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round"/><path d="M-5,3 C-2,-1 2,-1 5,3" fill="none" stroke="#FFF" stroke-width="1.5" stroke-linecap="round"/>';
-                break;
-            default:
-                icon = '<circle cx="0" cy="0" r="4" fill="none" stroke="#FFF" stroke-width="2"/>';
-        }
-        return `<rect x="178" y="205" width="44" height="50" rx="10" fill="#333" stroke="#222" stroke-width="2"/><rect x="183" y="210" width="34" height="18" rx="4" fill="#111"/><circle cx="193" cy="216" r="3" fill="#4ECDC4" opacity="0.9"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/></circle><circle cx="204" cy="216" r="3" fill="#FFD93D" opacity="0.9"><animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/></circle><g transform="translate(200,240)">${icon}</g><text x="200" y="256" text-anchor="middle" font-size="7" fill="#AAA" font-family="sans-serif" font-weight="600">${abilityLabels[a]||''}</text>`;
-    }
-
+   function getControlPanelSVG(a) {
+    if (!a) return '';
+    const emoji = abilityEmoji[a] || '⭐';
+    const label = abilityLabels[a] || '';
+    return `<rect x="178" y="205" width="44" height="50" rx="10" fill="#333" stroke="#222" stroke-width="2"/>
+    <rect x="183" y="210" width="34" height="18" rx="4" fill="#111"/>
+    <circle cx="193" cy="216" r="3" fill="#4ECDC4" opacity="0.9"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="204" cy="216" r="3" fill="#FFD93D" opacity="0.9"><animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/></circle>
+    <text x="200" y="240" text-anchor="middle" font-size="14" fill="#FFF">${emoji}</text>
+    <text x="200" y="256" text-anchor="middle" font-size="6" fill="#AAA" font-family="sans-serif" font-weight="600">${label}</text>`;
+}
     function getBodySVG() {
+        if (!state.bodyColor) return '';
         return `<rect x="140" y="168" width="120" height="122" rx="28" fill="var(--bodyColor)" stroke="var(--bodyColorDark)" stroke-width="3.5"/><rect x="140" y="168" width="120" height="122" rx="28" fill="url(#bodyGrad)"/>`;
     }
-
     function generateRobotSVGString(data) {
-        const c = bodyColorMap[data.bodyColor] || '#5B9BD5';
-        const cd = bodyColorDarkMap[data.bodyColor] || '#3D7AB8';
+        const c = bodyColorMap[data.bodyColor]||'#5B9BD5', cd = bodyColorDarkMap[data.bodyColor]||'#3D7AB8';
         let svg = `<svg viewBox="0 0 400 480" xmlns="http://www.w3.org/2000/svg" style="--bodyColor:${c};--bodyColorDark:${cd};width:100%;height:100%">`;
         svg += `<filter id="sf"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#00000018"/></filter>`;
         svg += `<radialGradient id="bg"><stop offset="0%" stop-color="#fff" stop-opacity="0.3"/><stop offset="100%" stop-color="#000" stop-opacity="0.08"/></radialGradient>`;
         svg += `<ellipse cx="200" cy="440" rx="85" ry="10" fill="#00000012"/>`;
         svg += `<g filter="url(#sf)">`;
         svg += getAntennaSVG();
-        svg += getHeadSVG(data.head).replace(/var\(--bodyColor\)/g, c).replace(/var\(--bodyColorDark\)/g, cd);
+        svg += getHeadSVG(data.head) ? getHeadSVG(data.head).replace(/var\(--bodyColor\)/g,c).replace(/var\(--bodyColorDark\)/g,cd) : '';
         svg += getEyesSVG(data.eyes);
         svg += getMouthSVG(data.mouth);
         svg += `<rect x="185" y="152" width="30" height="16" rx="6" fill="#888"/>`;
-        svg += getBodySVG().replace(/var\(--bodyColor\)/g, c).replace(/var\(--bodyColorDark\)/g, cd);
+        svg += getBodySVG() ? getBodySVG().replace(/var\(--bodyColor\)/g,c).replace(/var\(--bodyColorDark\)/g,cd) : '';
         svg += getControlPanelSVG(data.ability);
-        svg += getArmsSVG(data.arms).replace(/var\(--bodyColorDark\)/g, cd).replace(/var\(--bodyColor\)/g, c);
-        svg += getLegsSVG(data.legs).replace(/var\(--bodyColorDark\)/g, cd);
+        svg += getArmsSVG(data.arms) ? getArmsSVG(data.arms).replace(/var\(--bodyColorDark\)/g,cd).replace(/var\(--bodyColor\)/g,c) : '';
+        svg += getLegsSVG(data.legs) ? getLegsSVG(data.legs).replace(/var\(--bodyColorDark\)/g,cd) : '';
         svg += `</g></svg>`;
         return svg;
     }
 
     function updateRobot() {
-        const c = bodyColorMap[state.bodyColor] || '#5B9BD5';
-        const cd = bodyColorDarkMap[state.bodyColor] || '#3D7AB8';
+        const c = bodyColorMap[state.bodyColor] || '#888';
+        const cd = bodyColorDarkMap[state.bodyColor] || '#666';
         document.getElementById('robotSVG').style.setProperty('--bodyColor', c);
         document.getElementById('robotSVG').style.setProperty('--bodyColorDark', cd);
         document.getElementById('antenna-group').innerHTML = getAntennaSVG();
@@ -777,413 +674,349 @@
         document.getElementById('control-panel-group').innerHTML = getControlPanelSVG(state.ability);
         document.getElementById('arms-group').innerHTML = getArmsSVG(state.arms);
         document.getElementById('legs-group').innerHTML = getLegsSVG(state.legs);
-        document.querySelectorAll('.option-btn,.color-swatch').forEach(b => b.classList.remove('selected'));
-        document.querySelectorAll(`.opt-head[data-v="${state.head}"]`).forEach(b => b.classList.add('selected'));
-        document.querySelectorAll(`.opt-eyes[data-v="${state.eyes}"]`).forEach(b => b.classList.add('selected'));
-        document.querySelectorAll(`.opt-mouth[data-v="${state.mouth}"]`).forEach(b => b.classList.add('selected'));
-        document.querySelectorAll(`.opt-arms[data-v="${state.arms}"]`).forEach(b => b.classList.add('selected'));
-        document.querySelectorAll(`.opt-legs[data-v="${state.legs}"]`).forEach(b => b.classList.add('selected'));
-        document.querySelectorAll(`.opt-ability[data-v="${state.ability}"]`).forEach(b => b.classList.add('selected'));
-        const cs = document.querySelector(`.color-swatch[data-v="${state.bodyColor}"]`);
-        if (cs) cs.classList.add('selected');
+        document.querySelectorAll('.option-btn,.color-swatch,.color-swatch-wrap').forEach(b => b.classList.remove('selected'));
+        if (state.head !== null) document.querySelectorAll(`.opt-head[data-v="${state.head}"]`).forEach(b => b.classList.add('selected'));
+        if (state.eyes !== null) document.querySelectorAll(`.opt-eyes[data-v="${state.eyes}"]`).forEach(b => b.classList.add('selected'));
+        if (state.mouth !== null) document.querySelectorAll(`.opt-mouth[data-v="${state.mouth}"]`).forEach(b => b.classList.add('selected'));
+        if (state.arms !== null) document.querySelectorAll(`.opt-arms[data-v="${state.arms}"]`).forEach(b => b.classList.add('selected'));
+        if (state.legs !== null) document.querySelectorAll(`.opt-legs[data-v="${state.legs}"]`).forEach(b => b.classList.add('selected'));
+        if (state.ability !== null) document.querySelectorAll(`.opt-ability[data-v="${state.ability}"]`).forEach(b => b.classList.add('selected'));
+        if (state.bodyColor !== null) {
+            const cs = document.querySelector(`.color-swatch-wrap[data-v="${state.bodyColor}"]`);
+            if (cs) cs.classList.add('selected');
+        }
         updateProgress();
     }
 
     function updateProgress() {
         const d = state.interactedCategories.size;
-        document.getElementById('progressBar').style.width = Math.round((d / 7) * 100) + '%';
-        document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('done', i < state.interactedCategories.size));
+        document.getElementById('progressBar').style.width = Math.round((d/7)*100)+'%';
+        document.querySelectorAll('.step-dot').forEach((d,i)=>d.classList.toggle('done',i<state.interactedCategories.size));
     }
 
     function buildCategoriesUI() {
-        const cats = [
-            { id: 'head', label: '🤖 Head', opts: ['Round', 'Square', 'Rectangle', 'Triangle'], key: 'head', cls: 'opt-head' },
-            { id: 'eyes', label: '👀 Eyes', opts: ['Round', 'Star', 'Diamond', 'Heart'], key: 'eyes', cls: 'opt-eyes' },
-            { id: 'mouth', label: '👄 Mouth', opts: ['Smile', 'Straight', 'Open', 'Zigzag'], key: 'mouth', cls: 'opt-mouth' },
-            { id: 'arms', label: '💪 Arms', opts: ['Normal', 'Claw', 'Hook', 'Grabber'], key: 'arms', cls: 'opt-arms' },
-            { id: 'legs', label: '🦿 Legs', opts: ['Boots', 'Wheel', 'Skates', 'Spring'], key: 'legs', cls: 'opt-legs' },
-            { id: 'bodyColor', label: '🎨 Color', opts: ['blue', 'green', 'yellow', 'purple', 'orange'], key: 'bodyColor', cls: 'color-swatch', type: 'color' },
-            { id: 'ability', label: '⭐ Power', opts: ['fly', 'clean', 'cook', 'dance', 'swim'], key: 'ability', cls: 'opt-ability', disp: ['🪽 Fly', '🧹 Clean', '🍳 Cook', '💃 Dance', '🏊 Swim'] },
+        const cats=[
+            {id:'head',label:'🤖 Head',opts:['Round','Square','Rectangle','Triangle'],key:'head',cls:'opt-head'},
+            {id:'eyes',label:'👀 Eyes',opts:['Round','Star','Diamond','Heart'],key:'eyes',cls:'opt-eyes'},
+            {id:'mouth',label:'👄 Mouth',opts:['Smile','Straight','Open','Zigzag'],key:'mouth',cls:'opt-mouth'},
+            {id:'arms',label:'💪 Arms',opts:['Normal','Claw','Hook','Grabber'],key:'arms',cls:'opt-arms'},
+            {id:'legs',label:'🦿 Legs',opts:['Boots','Wheel','Skates','Spring'],key:'legs',cls:'opt-legs'},
+            {id:'bodyColor',label:'🎨 Color',opts:['blue','green','yellow','purple','orange'],key:'bodyColor',cls:'color-swatch',type:'color'},
+            {id:'ability',label:'⭐ Power',opts:['fly','clean','cook','dance','swim'],key:'ability',cls:'opt-ability',disp:['🪽 Fly','🧹 Clean','🍳 Cook','💃 Dance','🏊 Swim']},
         ];
-        let h = '';
-        cats.forEach(cat => {
-            h += `<div class="category-group"><div class="category-label">${cat.label}</div>`;
-            if (cat.type === 'color') {
-                h += `<div class="color-row">`;
-                cat.opts.forEach(o => h += `<div class="color-swatch-wrap" data-cat="${cat.key}" data-v="${o}"><div class="color-swatch ${cat.cls}" style="background:${bodyColorMap[o]||'#888'};"></div><span class="color-swatch-name">${o}</span></div>`);
-                h += `</div>`;
-            } else if (cat.disp) {
-                h += `<div class="options-row">`;
-                cat.opts.forEach((o, i) => h += `<button class="option-btn ${cat.cls}" data-v="${o}" data-cat="${cat.key}">${cat.disp[i]}</button>`);
-                h += `</div>`;
+        let h='';
+        cats.forEach(cat=>{
+            h+=`<div class="category-group"><div class="category-label">${cat.label}</div>`;
+            if(cat.type==='color'){
+                h+=`<div class="color-row">`;
+                cat.opts.forEach(o=>h+=`<div class="color-swatch-wrap" data-cat="${cat.key}" data-v="${o}"><div class="color-swatch ${cat.cls}" style="background:${bodyColorMap[o]||'#888'};"></div><span class="color-swatch-name">${o}</span></div>`);
+                h+=`</div>`;
+            } else if(cat.disp){
+                h+=`<div class="options-row">`;
+                cat.opts.forEach((o,i)=>h+=`<button class="option-btn ${cat.cls}" data-v="${o}" data-cat="${cat.key}">${cat.disp[i]}</button>`);
+                h+=`</div>`;
             } else {
-                h += `<div class="options-row">`;
-                cat.opts.forEach((o, i) => h += `<button class="option-btn ${cat.cls}" data-v="${i}" data-cat="${cat.key}">${o}</button>`);
-                h += `</div>`;
+                h+=`<div class="options-row">`;
+                cat.opts.forEach((o,i)=>h+=`<button class="option-btn ${cat.cls}" data-v="${i}" data-cat="${cat.key}">${o}</button>`);
+                h+=`</div>`;
             }
-            h += `</div>`;
+            h+=`</div>`;
         });
-        document.getElementById('categoriesContainer').innerHTML = h;
-        const sd = document.getElementById('stepIndicators');
-        sd.innerHTML = '';
-        for (let i = 0; i < 7; i++) {
-            const d = document.createElement('span');
-            d.className = 'step-dot';
-            sd.appendChild(d);
-        }
+        document.getElementById('categoriesContainer').innerHTML=h;
+        const sd=document.getElementById('stepIndicators');
+        sd.innerHTML='';
+        for(let i=0;i<7;i++){const d=document.createElement('span');d.className='step-dot';sd.appendChild(d);}
     }
-
-    async function saveToFirebase(data) {
-        if (!firebaseReady || !db) return false;
-        try {
-            const pngBase64 = await svgToPngBase64(data.robotSVG);
-            const docRef = await db.collection("robots").add({
-                studentName: data.studentName,
-                robotName: data.robotName,
-                headStyle: data.head,
-                eyesStyle: data.eyes,
-                mouthStyle: data.mouth,
-                armsStyle: data.arms,
-                legsStyle: data.legs,
-                bodyColor: data.bodyColor,
-                ability: data.ability,
-                robotSVG: data.robotSVG,
-                robotPNG: pngBase64,
-                writingText: data.writingText,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        async function saveToFirebase(data) {
+        if(!firebaseReady||!db)return false;
+        try{
+            const pngBase64=await svgToPngBase64(data.robotSVG);
+            const docRef=await db.collection("robots").add({
+                studentName:data.studentName, robotName:data.robotName,
+                headStyle:data.head, eyesStyle:data.eyes, mouthStyle:data.mouth,
+                armsStyle:data.arms, legsStyle:data.legs,
+                bodyColor:data.bodyColor, ability:data.ability,
+                robotSVG:data.robotSVG, robotPNG:pngBase64,
+                writingText:data.writingText,
+                timestamp:firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log('✅ Saved:', docRef.id);
+            console.log('✅ Saved:',docRef.id);
             return true;
-        } catch (e) {
-            console.warn('⚠️ Save failed:', e.message);
-            return false;
-        }
+        } catch(e){ console.warn('⚠️ Save failed:',e.message); return false; }
     }
 
     function getCurrentRobotData() {
-        const hn = ['round', 'square', 'rectangle', 'triangle'];
-        const en = ['round', 'star', 'diamond', 'heart-shaped'];
-        const an = abilityLabels[state.ability] || state.ability;
-        const writing = finalParagraph;
+        const hn=['round','square','rectangle','triangle'], en=['round','star','diamond','heart-shaped'], an=abilityLabels[state.ability]||state.ability;
+        const writing=finalParagraph;
         return {
-            studentName: studentName,
-            robotName: robotName,
-            head: state.head,
-            eyes: state.eyes,
-            mouth: state.mouth,
-            arms: state.arms,
-            legs: state.legs,
-            bodyColor: state.bodyColor,
-            ability: state.ability,
-            robotSVG: generateRobotSVGString(state),
-            writingText: writing,
-            timestamp: Date.now()
+            studentName:studentName, robotName:robotName,
+            head:state.head, eyes:state.eyes, mouth:state.mouth,
+            arms:state.arms, legs:state.legs,
+            bodyColor:state.bodyColor, ability:state.ability,
+            robotSVG:generateRobotSVGString(state),
+            writingText:writing, timestamp:Date.now()
         };
     }
 
     async function saveToSheet(data) {
-        try {
-            await fetch("https://api.sheetbest.com/sheets/02675f2c-a29c-4309-aebf-48ff72fa0b39", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify([{
-                    studentName: data.studentName,
-                    robotName: data.robotName,
-                    bodyColor: data.bodyColor,
-                    ability: data.ability,
-                    writingText: data.writingText,
-                    robotPNG: data.robotPNG || 'No image',
-                    timestamp: new Date().toLocaleString()
+        try{
+            await fetch("https://api.sheetbest.com/sheets/02675f2c-a29c-4309-aebf-48ff72fa0b39",{
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify([{
+                    studentName:data.studentName, robotName:data.robotName,
+                    bodyColor:data.bodyColor, ability:data.ability,
+                    writingText:data.writingText,
+                    robotPNG:data.robotPNG||'No image',
+                    timestamp:new Date().toLocaleString()
                 }])
             });
             console.log('✅ Sheet updated!');
-        } catch (e) {
-            console.log('⚠️ Sheet error:', e);
-        }
+        } catch(e){ console.log('⚠️ Sheet error:',e); }
     }
 
     function addToGallery() {
-        const data = getCurrentRobotData();
+        const data=getCurrentRobotData();
         robotGallery.unshift(data);
-        if (robotGallery.length > 20) robotGallery = robotGallery.slice(0, 20);
+        if(robotGallery.length>20)robotGallery=robotGallery.slice(0,20);
         saveGallery();
     }
 
     async function clearAllData() {
-        if (firebaseReady && db) {
-            try {
-                const snapshot = await db.collection("robots").get();
-                const batch = db.batch();
-                snapshot.forEach(doc => batch.delete(doc.ref));
+        if(firebaseReady&&db){
+            try{
+                const snapshot=await db.collection("robots").get();
+                const batch=db.batch();
+                snapshot.forEach(doc=>batch.delete(doc.ref));
                 await batch.commit();
-            } catch (e) {}
+            } catch(e){}
         }
-        robotGallery = [];
+        robotGallery=[];
         saveGallery();
         showToast('🗑️ All data cleared!');
     }
 
     function showTeacherLogin() {
-        const card = document.getElementById('teacherCard');
-        card.innerHTML = `
-            <div class="teacher-title">🔑 Teacher Dashboard</div>
-            <p style="color:#7F8C8D;">Enter password to view results</p>
-            <input type="password" class="teacher-login-input" id="teacherPasswordInput" placeholder="Password...">
-            <br>
-            <button class="btn-enter" id="btnTeacherLogin">🔓 Unlock</button>
-            <button class="btn-close" id="btnCloseTeacherLogin">✖ Cancel</button>`;
+        const card=document.getElementById('teacherCard');
+        card.innerHTML=`<div class="teacher-title">🔑 Teacher Dashboard</div><p style="color:#7F8C8D;">Enter password to view results</p><input type="password" class="teacher-login-input" id="teacherPasswordInput" placeholder="Password..."><br><button class="btn-enter" id="btnTeacherLogin">🔓 Unlock</button><button class="btn-close" id="btnCloseTeacherLogin">✖ Cancel</button>`;
         document.getElementById('teacherOverlay').classList.add('show');
-        document.getElementById('btnTeacherLogin').addEventListener('click', verifyTeacherPassword);
-        document.getElementById('teacherPasswordInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') verifyTeacherPassword();
-        });
-        document.getElementById('btnCloseTeacherLogin').addEventListener('click', closeTeacherOverlay);
-        setTimeout(() => document.getElementById('teacherPasswordInput').focus(), 300);
+        document.getElementById('btnTeacherLogin').addEventListener('click',verifyTeacherPassword);
+        document.getElementById('teacherPasswordInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')verifyTeacherPassword();});
+        document.getElementById('btnCloseTeacherLogin').addEventListener('click',closeTeacherOverlay);
+        setTimeout(()=>document.getElementById('teacherPasswordInput').focus(),300);
     }
 
     function verifyTeacherPassword() {
-        const input = document.getElementById('teacherPasswordInput');
-        if (input.value === TEACHER_PASSWORD) {
-            AudioEngine.success();
-            loadTeacherDashboard();
-        } else {
-            showToast('❌ Wrong password!');
-            input.value = '';
-            input.focus();
-        }
+        const input=document.getElementById('teacherPasswordInput');
+        if(input.value===TEACHER_PASSWORD){ AudioEngine.success(); loadTeacherDashboard(); }
+        else { showToast('❌ Wrong password!'); input.value=''; input.focus(); }
     }
 
     async function loadTeacherDashboard() {
-        const card = document.getElementById('teacherCard');
-        card.innerHTML = `<div class="teacher-title">📊 Student Robots</div><p style="color:#7F8C8D;">Loading...</p>`;
-        let allData = [];
-        if (firebaseReady && db) {
-            try {
-                const snapshot = await db.collection("robots").orderBy("timestamp", "desc").limit(50).get();
-                snapshot.forEach(doc => allData.push({ id: doc.id, ...doc.data() }));
-            } catch (e) {}
+        const card=document.getElementById('teacherCard');
+        card.innerHTML=`<div class="teacher-title">📊 Student Robots</div><p style="color:#7F8C8D;">Loading...</p>`;
+        let allData=[];
+        if(firebaseReady&&db){
+            try{
+                const snapshot=await db.collection("robots").orderBy("timestamp","desc").limit(50).get();
+                snapshot.forEach(doc=>allData.push({id:doc.id,...doc.data()}));
+            } catch(e){}
         }
-        const uniqueData = allData.filter((d, i, arr) => arr.findIndex(x => x.id === d.id) === i);
-        if (uniqueData.length === 0) {
-            card.innerHTML = `<div class="teacher-title">📊 Student Robots</div><p>No robots submitted yet.</p><button class="btn-close" id="btnCloseTeacher">✖ Close</button>`;
+        const uniqueData=allData.filter((d,i,arr)=>arr.findIndex(x=>x.id===d.id)===i);
+        if(uniqueData.length===0){
+            card.innerHTML=`<div class="teacher-title">📊 Student Robots</div><p>No robots submitted yet.</p><button class="btn-close" id="btnCloseTeacher">✖ Close</button>`;
         } else {
-            let rows = '';
-            uniqueData.forEach((d, i) => {
-                const imgSrc = d.robotPNG || '';
-                rows += `<tr><td>${i+1}</td><td><strong>${d.studentName||'?'}</strong></td><td>${d.robotName||'Robo'}</td><td>${d.bodyColor||'?'}</td><td>${abilityEmoji[d.ability]||'?'} ${abilityLabels[d.ability]||''}</td><td>${imgSrc?`<img src="${imgSrc}" alt="robot">`:'🖼️'}</td><td style="font-size:0.6rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.writingText||''}</td></tr>`;
+            let rows='';
+            uniqueData.forEach((d,i)=>{
+                const imgSrc=d.robotPNG||'';
+                rows+=`<tr><td>${i+1}</td><td><strong>${d.studentName||'?'}</strong></td><td>${d.robotName||'Robo'}</td><td>${d.bodyColor||'?'}</td><td>${abilityEmoji[d.ability]||'?'} ${abilityLabels[d.ability]||''}</td><td>${imgSrc?`<img src="${imgSrc}" alt="robot">`:'🖼️'}</td><td style="font-size:0.7rem;max-width:150px;word-break:break-word;line-height:1.3;">${d.writingText||''}</td></tr>`;
             });
-            card.innerHTML = `<div class="teacher-title">📊 Student Robots (${uniqueData.length})</div>
-              <div style="max-height:45vh;overflow-y:auto;border-radius:12px;border:1px solid #F0F0F0;">
-                <table class="teacher-table">
-                  <thead><tr><th>#</th><th>Student</th><th>Robot</th><th>Color</th><th>Power</th><th>Image</th><th>Writing</th></tr></thead>
-                  <tbody>${rows}</tbody>
-                </table>
-              </div>
-              <div style="margin-top:10px;">
-                <button class="btn-export" id="btnExportCSV">📥 Download CSV</button>
-                <button class="btn-danger" id="btnClearData">🗑️ Clear All Data</button>
-                <button class="btn-close" id="btnCloseTeacher">✖ Close</button>
-              </div>`;
+            card.innerHTML=`<div class="teacher-title">📊 Student Robots (${uniqueData.length})</div><div style="max-height:45vh;overflow-y:auto;border-radius:12px;border:1px solid #F0F0F0;"><table class="teacher-table"><thead><tr><th>#</th><th>Student</th><th>Robot</th><th>Color</th><th>Power</th><th>Image</th><th>Writing</th></tr></thead><tbody>${rows}</tbody></table></div><div style="margin-top:10px;"><button class="btn-export" id="btnExportCSV">📥 Download CSV</button><button class="btn-danger" id="btnClearData">🗑️ Clear All Data</button><button class="btn-close" id="btnCloseTeacher">✖ Close</button></div>`;
         }
-        document.getElementById('btnCloseTeacher')?.addEventListener('click', closeTeacherOverlay);
-        document.getElementById('btnExportCSV')?.addEventListener('click', () => exportCSV(uniqueData));
-        document.getElementById('btnClearData')?.addEventListener('click', () => {
-            if (confirm('⚠️ Are you sure you want to delete ALL robot data? This cannot be undone!')) {
-                clearAllData();
-                loadTeacherDashboard();
-            }
-        });
+        document.getElementById('btnCloseTeacher')?.addEventListener('click',closeTeacherOverlay);
+        document.getElementById('btnExportCSV')?.addEventListener('click',()=>exportCSV(uniqueData));
+        document.getElementById('btnClearData')?.addEventListener('click',()=>{if(confirm('⚠️ Are you sure you want to delete ALL robot data? This cannot be undone!')){clearAllData();loadTeacherDashboard();}});
     }
 
     function exportCSV(data) {
-        let csv = 'Student Name,Robot Name,Body Color,Ability,Writing Text\n';
-        data.forEach(d => {
-            csv += `"${d.studentName||''}","${d.robotName||''}","${d.bodyColor||''}","${abilityLabels[d.ability]||''}","${(d.writingText||'').replace(/"/g,'""')}"\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'robot_results.csv';
-        a.click();
+        let csv='Student Name,Robot Name,Body Color,Ability,Writing Text\n';
+        data.forEach(d=>{ csv+=`"${d.studentName||''}","${d.robotName||''}","${d.bodyColor||''}","${abilityLabels[d.ability]||''}","${(d.writingText||'').replace(/"/g,'""')}"\n`; });
+        const blob=new Blob([csv],{type:'text/csv'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download='robot_results.csv'; a.click();
         URL.revokeObjectURL(url);
         showToast('📥 CSV Downloaded!');
     }
 
-    function closeTeacherOverlay() {
-        document.getElementById('teacherOverlay').classList.remove('show');
-        AudioEngine.click();
-    }
+    function closeTeacherOverlay() { document.getElementById('teacherOverlay').classList.remove('show'); AudioEngine.click(); }
 
     function showGallery() {
-        const overlay = document.getElementById('galleryOverlay');
-        const card = document.getElementById('galleryCard');
-        if (robotGallery.length === 0) {
-            card.innerHTML = `<div class="gallery-title">🖼️ My Robots</div><p>No robots yet!</p><button class="btn-close" id="btnCloseGallery">👌 OK</button>`;
+        const overlay=document.getElementById('galleryOverlay');
+        const card=document.getElementById('galleryCard');
+        if(robotGallery.length===0){
+            card.innerHTML=`<div class="gallery-title">🖼️ My Robots</div><p>No robots yet!</p><button class="btn-close" id="btnCloseGallery">👌 OK</button>`;
         } else {
-            let items = '';
-            robotGallery.forEach((r, i) => {
-                items += `<div class="gallery-item" data-idx="${i}"><div class="gallery-item-name">${r.robotName}</div><div class="robot-svg-thumb">${r.robotSVG}</div><div style="font-size:0.6rem;">${abilityLabels[r.ability]}</div></div>`;
-            });
-            card.innerHTML = `<div class="gallery-title">🖼️ My Robots</div><div class="gallery-grid">${items}</div><p style="font-size:0.7rem;">Tap to load</p><button class="btn-close" id="btnCloseGallery">✖ Close</button>`;
+            let items='';
+            robotGallery.forEach((r,i)=>{ items+=`<div class="gallery-item" data-idx="${i}"><div class="gallery-item-name">${r.robotName}</div><div class="robot-svg-thumb">${r.robotSVG}</div><div style="font-size:0.6rem;">${abilityLabels[r.ability]}</div></div>`; });
+            card.innerHTML=`<div class="gallery-title">🖼️ My Robots</div><div class="gallery-grid">${items}</div><p style="font-size:0.7rem;">Tap to load</p><button class="btn-close" id="btnCloseGallery">✖ Close</button>`;
         }
         overlay.classList.add('show');
-        document.querySelectorAll('.gallery-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const idx = parseInt(this.dataset.idx);
-                if (idx >= 0 && idx < robotGallery.length) {
-                    loadRobotFromGallery(robotGallery[idx]);
-                    closeGallery();
-                    showToast('✅ Loaded!');
-                }
-            });
-        });
-        const cb = document.getElementById('btnCloseGallery');
-        if (cb) cb.addEventListener('click', closeGallery);
+        document.querySelectorAll('.gallery-item').forEach(item=>{ item.addEventListener('click',function(){ const idx=parseInt(this.dataset.idx); if(idx>=0&&idx<robotGallery.length){ loadRobotFromGallery(robotGallery[idx]); closeGallery(); showToast('✅ Loaded!'); } }); });
+        const cb=document.getElementById('btnCloseGallery'); if(cb)cb.addEventListener('click',closeGallery);
     }
 
-    function closeGallery() {
-        document.getElementById('galleryOverlay').classList.remove('show');
-        AudioEngine.click();
-    }
+    function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); AudioEngine.click(); }
 
     function loadRobotFromGallery(data) {
-        state.head = data.head;
-        state.eyes = data.eyes;
-        state.mouth = data.mouth;
-        state.arms = data.arms;
-        state.legs = data.legs;
-        state.bodyColor = data.bodyColor;
-        state.ability = data.ability;
-        state.interactedCategories = new Set(['head', 'eyes', 'mouth', 'arms', 'legs', 'bodyColor', 'ability']);
-        robotName = data.robotName;
-        document.getElementById('robotNameDisplay').textContent = '🤖 ' + robotName;
+        state.head=data.head; state.eyes=data.eyes; state.mouth=data.mouth;
+        state.arms=data.arms; state.legs=data.legs;
+        state.bodyColor=data.bodyColor; state.ability=data.ability;
+        state.interactedCategories=new Set(['head','eyes','mouth','arms','legs','bodyColor','ability']);
+        robotName=data.robotName;
+        document.getElementById('robotNameDisplay').textContent='🤖 '+robotName;
         updateRobot();
         AudioEngine.success();
     }
 
     function pulseRobot() {
-        const rg = document.getElementById('robot-group');
-        rg.style.transition = 'transform 0.25s ease';
-        rg.style.transform = 'scale(1.05)';
-        setTimeout(() => rg.style.transform = 'scale(1)', 250);
+        const rg=document.getElementById('robot-group');
+        rg.style.transition='transform 0.25s ease';
+        rg.style.transform='scale(1.05)';
+        setTimeout(()=>rg.style.transform='scale(1)',250);
     }
 
     function triggerCelebration() {
-        const rg = document.getElementById('robot-group');
+        const rg=document.getElementById('robot-group');
         rg.classList.add('jumping');
-        const la = document.getElementById('arms-group');
-        if (la) la.classList.add('waving');
-        setTimeout(() => { rg.classList.remove('jumping'); if (la) la.classList.remove('waving'); }, 1800);
+        const la=document.getElementById('arms-group');
+        if(la)la.classList.add('waving');
+        setTimeout(()=>{rg.classList.remove('jumping');if(la)la.classList.remove('waving');},1800);
     }
 
     function showToast(m) {
-        const t = document.getElementById('toast');
-        t.textContent = m;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2000);
+        const t=document.getElementById('toast');
+        t.textContent=m; t.classList.add('show');
+        setTimeout(()=>t.classList.remove('show'),2000);
     }
 
     function spawnConfetti() {
-        const c = document.getElementById('confettiContainer');
-        const cols = ['#FF6B6B', '#FFD93D', '#4ECDC4', '#FF8C42', '#A97BCA', '#6BCB77', '#5B9BD5', '#FF9FF3'];
-        const sh = ['■', '●', '▲', '★', '♦', '❤️', '🌟', '🎉'];
-        const f = document.createDocumentFragment();
-        for (let i = 0; i < 70; i++) {
-            const p = document.createElement('div');
-            p.className = 'confetti-piece';
-            p.textContent = sh[Math.floor(Math.random() * sh.length)];
-            p.style.left = Math.random() * 100 + '%';
-            p.style.top = -(Math.random() * 25 + 5) + '%';
-            p.style.fontSize = (Math.random() * 16 + 8) + 'px';
-            p.style.color = cols[Math.floor(Math.random() * cols.length)];
-            p.style.animationDuration = (Math.random() * 2 + 1.8) + 's';
-            p.style.animationDelay = Math.random() * 0.5 + 's';
+        const c=document.getElementById('confettiContainer');
+        const cols=['#FF6B6B','#FFD93D','#4ECDC4','#FF8C42','#A97BCA','#6BCB77','#5B9BD5','#FF9FF3'];
+        const sh=['■','●','▲','★','♦','❤️','🌟','🎉'];
+        const f=document.createDocumentFragment();
+        for(let i=0;i<70;i++){
+            const p=document.createElement('div');
+            p.className='confetti-piece';
+            p.textContent=sh[Math.floor(Math.random()*sh.length)];
+            p.style.left=Math.random()*100+'%';
+            p.style.top=-(Math.random()*25+5)+'%';
+            p.style.fontSize=(Math.random()*16+8)+'px';
+            p.style.color=cols[Math.floor(Math.random()*cols.length)];
+            p.style.animationDuration=(Math.random()*2+1.8)+'s';
+            p.style.animationDelay=Math.random()*0.5+'s';
             f.appendChild(p);
         }
         c.appendChild(f);
-        setTimeout(() => c.innerHTML = '', 3200);
+        setTimeout(()=>c.innerHTML='',3200);
+    }
+
+    function showWordBankPopup() {
+        let html = `<div class="word-bank-popup"><h3>📚 Help</h3>`;
+        for (let cat in ALL_WORDS) {
+            html += `<p style="font-weight:700;margin-top:8px;">${cat}:</p><div class="word-bank">`;
+            ALL_WORDS[cat].forEach(w => html += `<span>${w}</span>`);
+            html += `</div>`;
+        }
+        html += `<button class="close-popup" onclick="this.parentElement.remove()">✖ Close</button></div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
     }
 
     function showWritingChallenge() {
         const card = document.getElementById('writingCard');
-        const wordBankWords = [robotName, state.bodyColor, ['round','square','rectangle','triangle'][state.head]+' eyes', abilityLabels[state.ability].toLowerCase()];
+        const svgThumb = generateRobotSVGString(state);
         card.innerHTML = `
             <h2>📝 Choose Your Writing Challenge</h2>
             <p>"Choose the challenge that makes you feel confident today!"</p>
+            <div class="robot-mini">${svgThumb}</div>
+            <p style="font-weight:700;">${robotName}</p>
             <div class="challenge-cards">
               <div class="challenge-card" data-challenge="easy">
                 <h3>🌱 Easy Start</h3>
-                <p class="desc">Perfect if you would like some help.</p>
+                <p class="desc">I want some help. I will fill in the blanks.</p>
               </div>
               <div class="challenge-card" data-challenge="mid">
                 <h3>🚀 Let's Write</h3>
-                <p class="desc">You can do it by yourself!</p>
+                <p class="desc">I can write 4 sentences with a Word Bank.</p>
               </div>
               <div class="challenge-card" data-challenge="hard">
                 <h3>⭐ Super Writer</h3>
-                <p class="desc">Ready for a bigger challenge?</p>
+                <p class="desc">I can write 5 sentences all by myself!</p>
               </div>
             </div>`;
         document.getElementById('writingOverlay').classList.remove('hidden');
         document.querySelectorAll('.challenge-card').forEach(card => {
-            card.addEventListener('click', function() {
-                const challenge = this.dataset.challenge;
-                showChallengeScreen(challenge);
-            });
+            card.addEventListener('click', function() { showChallengeScreen(this.dataset.challenge); });
         });
     }
 
     function showChallengeScreen(challenge) {
         const card = document.getElementById('writingCard');
+        const svgThumb = generateRobotSVGString(state);
         if (challenge === 'easy') {
             card.innerHTML = `
                 <h2>🌱 Easy Start</h2>
-                <p>Fill in the blanks to write about your robot!</p>
-                <div class="sentence-starters">
-                  <div class="line">This is <input type="text" id="ez1" placeholder="name" value="${robotName}"></div>
-                  <div class="line">He/She is <input type="text" id="ez2" placeholder="color" value="${state.bodyColor}"></div>
-                  <div class="line">He/She has <input type="text" id="ez3" placeholder="eyes" value="${['round','square','rectangle','triangle'][state.head]} eyes"></div>
-                  <div class="line">He/She can <input type="text" id="ez4" placeholder="ability" value="${abilityLabels[state.ability].toLowerCase()}"></div>
-                </div>
+                <div class="robot-mini">${svgThumb}</div>
+                <p><strong>${robotName}</strong></p>
+                <p>Fill in the blanks below:</p>
+                <div class="sentence-line">This is <span class="blank" contenteditable="true"></span>.</div>
+                <div class="sentence-line">He is <span class="blank" contenteditable="true"></span>.</div>
+                <div class="sentence-line">He has <span class="blank" contenteditable="true"></span>.</div>
+                <div class="sentence-line">He can <span class="blank" contenteditable="true"></span>.</div>
+                <button class="btn-wordbank" onclick="showWordBankPopup()">📚 Help</button>
                 <button class="btn-enter" id="btnSubmitEasy">✨ Submit My Paragraph</button>
               `;
             document.getElementById('btnSubmitEasy').addEventListener('click', () => {
-                const p = `This is ${document.getElementById('ez1').value}. He is ${document.getElementById('ez2').value}. He has ${document.getElementById('ez3').value}. He can ${document.getElementById('ez4').value}.`;
-                finalParagraph = p;
-                showProfileCard(p);
+                const blanks = card.querySelectorAll('.blank');
+                const p = `This is ${blanks[0].textContent}. He is ${blanks[1].textContent}. He has ${blanks[2].textContent}. He can ${blanks[3].textContent}.`;
+                finalParagraph = p; showProfileCard(p);
             });
         } else if (challenge === 'mid') {
             card.innerHTML = `
                 <h2>🚀 Let's Write</h2>
-                <p>Use the Word Bank to write four sentences about your robot.</p>
-                <div class="word-bank">
-                  <span>${robotName}</span><span>${state.bodyColor}</span><span>${['round','square','rectangle','triangle'][state.head]} eyes</span><span>${abilityLabels[state.ability].toLowerCase()}</span>
-                </div>
-                <textarea class="writing-textarea" id="midText" placeholder="Write your four sentences here...&#10;&#10;This is ...&#10;He is ...&#10;He has ...&#10;He can ..."></textarea>
+                <div class="robot-mini">${svgThumb}</div>
+                <p><strong>${robotName}</strong></p>
+                <p>Write four sentences.</p>
+                <div class="sentence-line"><span class="number">1.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">2.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">3.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">4.</span><span class="blank" contenteditable="true"></span></div>
+                <button class="btn-wordbank" onclick="showWordBankPopup()">📚 Help</button>
                 <button class="btn-enter" id="btnSubmitMid">✨ Submit My Paragraph</button>
               `;
             document.getElementById('btnSubmitMid').addEventListener('click', () => {
-                const p = document.getElementById('midText').value.trim();
-                if (!p) { showToast('⚠️ Please write your paragraph!'); return; }
-                finalParagraph = p;
-                showProfileCard(p);
+                const blanks = card.querySelectorAll('.blank');
+                const p = `${blanks[0].textContent}. ${blanks[1].textContent}. ${blanks[2].textContent}. ${blanks[3].textContent}.`;
+                if (!blanks[0].textContent.trim()) { showToast('⚠️ Please write your sentences!'); return; }
+                finalParagraph = p; showProfileCard(p);
             });
         } else if (challenge === 'hard') {
             card.innerHTML = `
                 <h2>⭐ Super Writer</h2>
-                <p>Write four sentences, then add one or two more! Use the ideas below or your own.</p>
-                <div class="word-bank">
-                  <span>${robotName}</span><span>${state.bodyColor}</span><span>${['round','square','rectangle','triangle'][state.head]} eyes</span><span>${abilityLabels[state.ability].toLowerCase()}</span>
-                </div>
-                <textarea class="writing-textarea" id="hardText" placeholder="Write your paragraph here...&#10;&#10;This is ...&#10;He is ...&#10;He has ...&#10;He can ...&#10;I like ${robotName} because ..."></textarea>
+                <div class="robot-mini">${svgThumb}</div>
+                <p><strong>${robotName}</strong></p>
+                <p>Write five sentences about your robot.</p>
+                <div class="sentence-line"><span class="number">1.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">2.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">3.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">4.</span><span class="blank" contenteditable="true"></span></div>
+                <div class="sentence-line"><span class="number">5.</span><span class="blank" contenteditable="true"></span></div>
                 <button class="btn-enter" id="btnSubmitHard">✨ Submit My Paragraph</button>
               `;
             document.getElementById('btnSubmitHard').addEventListener('click', () => {
-                const p = document.getElementById('hardText').value.trim();
-                if (!p) { showToast('⚠️ Please write your paragraph!'); return; }
-                finalParagraph = p;
-                showProfileCard(p);
+                const blanks = card.querySelectorAll('.blank');
+                const p = `${blanks[0].textContent}. ${blanks[1].textContent}. ${blanks[2].textContent}. ${blanks[3].textContent}. ${blanks[4].textContent}.`;
+                if (!blanks[0].textContent.trim()) { showToast('⚠️ Please write your sentences!'); return; }
+                finalParagraph = p; showProfileCard(p);
             });
         }
     }
@@ -1207,17 +1040,14 @@
         document.getElementById('profileOverlay').classList.remove('hidden');
         document.getElementById('btnReadAloud').addEventListener('click', () => {
             const utterance = new SpeechSynthesisUtterance(paragraph);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.9;
+            utterance.lang = 'en-US'; utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
             showToast('📢 Reading aloud...');
         });
         document.getElementById('btnSaveAndSend').addEventListener('click', async () => {
             const data = getCurrentRobotData();
-            AudioEngine.fanfare();
-            triggerCelebration();
-            addToGallery();
-            spawnConfetti();
+            AudioEngine.fanfare(); triggerCelebration();
+            addToGallery(); spawnConfetti();
             const saved = await saveToFirebase(data);
             await saveToSheet(data);
             if (saved) showToast('🎉 Sent to teacher!');
@@ -1228,10 +1058,10 @@
 
     function attachEvents() {
         document.getElementById('categoriesContainer').addEventListener('click', function(e) {
-            const t = e.target.closest('.option-btn') || e.target.closest('.color-swatch') || e.target.closest('.color-swatch-wrap');
+            const t = e.target.closest('.option-btn') || e.target.closest('.color-swatch-wrap') || e.target.closest('.color-swatch');
             if (!t) return;
-            const cat = t.dataset.cat,
-                val = t.dataset.v;
+            const cat = t.dataset.cat, val = t.dataset.v;
+            console.log('Clicked:', cat, val);
             if (cat === 'bodyColor') state.bodyColor = val;
             else if (cat === 'ability') state.ability = val;
             else if (cat === 'head') state.head = parseInt(val);
@@ -1252,25 +1082,18 @@
             state.bodyColor = ['blue', 'green', 'yellow', 'purple', 'orange'][Math.floor(Math.random() * 5)];
             state.ability = ['fly', 'clean', 'cook', 'dance', 'swim'][Math.floor(Math.random() * 5)];
             state.interactedCategories = new Set(['head', 'eyes', 'mouth', 'arms', 'legs', 'bodyColor', 'ability']);
-            AudioEngine.random();
-            updateRobot();
-            pulseRobot();
+            AudioEngine.random(); updateRobot(); pulseRobot();
         });
         document.getElementById('btnReset').addEventListener('click', () => {
-            Object.assign(state, { ...defaults, interactedCategories: new Set() });
-            AudioEngine.click();
-            updateRobot();
-            pulseRobot();
+            state.head = null; state.eyes = null; state.mouth = null;
+            state.arms = null; state.legs = null; state.bodyColor = null; state.ability = null;
+            state.interactedCategories = new Set();
+            AudioEngine.click(); updateRobot(); pulseRobot();
         });
-        document.getElementById('btnBuild').addEventListener('click', () => {
-            showWritingChallenge();
-        });
-        document.getElementById('btnGalleryOpen').addEventListener('click', () => { showGallery();
-            AudioEngine.click(); });
-        document.getElementById('btnTeacherOpen').addEventListener('click', () => { showTeacherLogin();
-            AudioEngine.click(); });
-        document.getElementById('btnTeacherWelcome').addEventListener('click', () => { showTeacherLogin();
-            AudioEngine.click(); });
+        document.getElementById('btnBuild').addEventListener('click', () => { showWritingChallenge(); });
+        document.getElementById('btnGalleryOpen').addEventListener('click', () => { showGallery(); AudioEngine.click(); });
+        document.getElementById('btnTeacherOpen').addEventListener('click', () => { showTeacherLogin(); AudioEngine.click(); });
+        document.getElementById('btnTeacherWelcome').addEventListener('click', () => { showTeacherLogin(); AudioEngine.click(); });
     }
 
     function init() {
@@ -1292,9 +1115,7 @@
         document.getElementById('btnEnterRobotName').addEventListener('click', () => {
             const nameInput = document.getElementById('robotNameInputOverlay');
             const name = nameInput.value.trim();
-            if (!name) { nameInput.classList.add('error');
-                showToast('⚠️ Please name your robot!');
-                setTimeout(() => nameInput.classList.remove('error'), 500); return; }
+            if (!name) { nameInput.classList.add('error'); showToast('⚠️ Please name your robot!'); setTimeout(() => nameInput.classList.remove('error'), 500); return; }
             robotName = name;
             document.getElementById('robotNameDisplay').textContent = '🤖 ' + robotName;
             document.getElementById('robotNameOverlay').classList.add('hidden');
@@ -1312,6 +1133,7 @@
         document.addEventListener('touchstart', function initA() { AudioEngine.getContext(); }, { once: true });
     }
     init();
+    window.showWordBankPopup = showWordBankPopup;
 })();
 </script>
 </body>
